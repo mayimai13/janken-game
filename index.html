@@ -1,1220 +1,490 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>匿名猜拳</title>
+<title>匿名猜拳淘汰賽</title>
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, "Microsoft JhengHei", sans-serif;
-            background: #f5f5f5;
-            text-align: center;
-            color: #222;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: Arial, "Microsoft JhengHei", sans-serif;
+    background: #f5f5f5;
+    text-align: center;
+    color: #222;
+}
 
-        .container {
-            max-width: 560px;
-            margin: 0 auto;
-            padding: 30px 18px 60px;
-        }
+.container {
+    max-width: 520px;
+    margin: auto;
+    padding: 30px 18px 60px;
+}
 
-        h1 {
-            margin-bottom: 5px;
-            font-size: 34px;
-        }
+h1 {
+    font-size: 34px;
+    margin-bottom: 5px;
+}
 
-        .subtitle {
-            color: #777;
-            margin-bottom: 25px;
-            font-size: 16px;
-        }
+.subtitle {
+    color: #777;
+    margin-bottom: 25px;
+}
 
-        .card {
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            margin-top: 20px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-        }
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 25px;
+    margin-top: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.10);
+}
 
-        input {
-            box-sizing: border-box;
-            width: 90%;
-            max-width: 320px;
-            padding: 14px;
-            margin: 8px 0;
-            font-size: 18px;
-            text-align: center;
-            border: 1px solid #ccc;
-            border-radius: 12px;
-        }
+input {
+    box-sizing: border-box;
+    width: 90%;
+    max-width: 320px;
+    padding: 14px;
+    margin: 8px 0;
+    font-size: 18px;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 12px;
+}
 
-        .normal-btn {
-            padding: 13px 22px;
-            margin: 8px;
-            border: none;
-            border-radius: 12px;
-            font-size: 17px;
-            cursor: pointer;
-            background: #06c755;
-            color: white;
-        }
+button {
+    padding: 13px 22px;
+    margin: 8px;
+    border: none;
+    border-radius: 12px;
+    font-size: 17px;
+    cursor: pointer;
+    color: white;
+    background: #06c755;
+}
 
-        .normal-btn:hover {
-            opacity: 0.9;
-        }
+.join-btn {
+    background: #1687ff;
+}
 
-        .secondary-btn {
-            background: #555;
-        }
+.hint {
+    color: #888;
+    font-size: 14px;
+    line-height: 1.6;
+}
 
-        .share-btn {
-            background: #1687ff;
-        }
+.room-number {
+    font-size: 34px;
+    font-weight: bold;
+    letter-spacing: 5px;
+    margin: 15px;
+}
 
-        .restart-btn {
-            background: #06c755;
-        }
-
-        .end-btn {
-            background: #e53935;
-        }
-
-        .choices {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 20px;
-        }
-
-        .choice {
-            width: 95px;
-            height: 115px;
-            border: none;
-            border-radius: 18px;
-            background: white;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.15);
-            font-size: 48px;
-            cursor: pointer;
-        }
-
-        .choice:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-        }
-
-        #roomArea,
-        #gameArea,
-        #endedArea,
-        #inviteLobbyArea {
-            display: none;
-        }
-
-        #roomCodeDisplay,
-        #inviteRoomCode {
-            font-size: 36px;
-            font-weight: bold;
-            letter-spacing: 6px;
-            margin: 12px 0;
-        }
-
-        #playerList {
-            text-align: left;
-            margin-top: 20px;
-        }
-
-        .player-row {
-            padding: 13px 6px;
-            border-bottom: 1px solid #eee;
-            font-size: 17px;
-        }
-
-        #status {
-            margin-top: 18px;
-            color: #666;
-            font-size: 16px;
-        }
-
-        #result {
-            margin-top: 25px;
-            font-size: 20px;
-            line-height: 1.9;
-        }
-
-        #copyMessage {
-            min-height: 22px;
-            color: #06a844;
-            font-size: 14px;
-            margin-top: 5px;
-        }
-
-        .hint {
-            color: #888;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .host-controls {
-            display: none;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-        }
-
-        .host-label {
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-
-        .ended-icon {
-            font-size: 60px;
-            margin-bottom: 10px;
-        }
-
-        hr {
-            margin: 25px 0;
-            border: none;
-            border-top: 1px solid #eee;
-        }
-    </style>
+#inviteArea {
+    display: none;
+}
+</style>
 </head>
 
 <body>
 
 <div class="container">
 
-    <h1>🎮 匿名猜拳</h1>
+<h1>🎮 匿名猜拳</h1>
 
-    <div class="subtitle">
-        自己取匿名暱稱，不需要 LINE 登入
-    </div>
-
-
-    <!-- 一般首頁 -->
-    <div id="normalLobbyArea" class="card">
-
-        <h2>建立新的猜拳房間</h2>
-
-        <input
-            id="nicknameInput"
-            type="text"
-            maxlength="12"
-            placeholder="輸入你的匿名暱稱"
-        >
-
-        <p class="hint">
-            例如：草莓、黑貓、玩家87
-        </p>
-
-        <button
-            class="normal-btn"
-            onclick="createRoom()"
-        >
-            🎮 建立房間
-        </button>
-
-        <hr>
-
-        <h3>手動加入房間</h3>
-
-        <input
-            id="roomInput"
-            type="text"
-            maxlength="4"
-            inputmode="numeric"
-            placeholder="輸入 4 位房號"
-        >
-
-        <br>
-
-        <button
-            class="normal-btn secondary-btn"
-            onclick="manualJoinRoom()"
-        >
-            🚪 加入房間
-        </button>
-
-    </div>
+<div class="subtitle">
+淘汰制猜拳大賽
+</div>
 
 
-    <!-- 邀請連結專用畫面 -->
-    <div id="inviteLobbyArea" class="card">
+<!-- 建立遊戲 -->
 
-        <h2>🎮 受邀加入猜拳</h2>
+<div id="createArea" class="card">
 
-        <div>房間號碼</div>
+<h2>👑 建立猜拳遊戲</h2>
 
-        <div id="inviteRoomCode"></div>
+<input
+    id="hostNickname"
+    maxlength="12"
+    placeholder="輸入你的匿名暱稱"
+>
 
-        <input
-            id="inviteNicknameInput"
-            type="text"
-            maxlength="12"
-            placeholder="輸入你的匿名暱稱"
-        >
+<p class="hint">
+建立遊戲的人會成為房主
+</p>
 
-        <p class="hint">
-            輸入暱稱後即可加入，不需要再建立房間
-        </p>
+<button onclick="createRoom()">
+🎮 建立遊戲
+</button>
 
-        <button
-            class="normal-btn"
-            onclick="joinInvitedRoom()"
-        >
-            🚪 加入遊戲
-        </button>
-
-    </div>
+</div>
 
 
-    <!-- 房間資訊 -->
-    <div id="roomArea" class="card">
+<!-- 邀請玩家 -->
 
-        <div>房間號碼</div>
+<div id="inviteArea" class="card">
 
-        <div id="roomCodeDisplay"></div>
+<h2>🎟️ 加入猜拳遊戲</h2>
 
-        <button
-            class="normal-btn share-btn"
-            onclick="copyInviteLink()"
-        >
-            📋 複製邀請連結
-        </button>
+<div>房間號碼</div>
 
-        <div id="copyMessage"></div>
+<div
+    id="inviteRoomNumber"
+    class="room-number">
+</div>
 
-        <div id="playerList"></div>
+<input
+    id="playerNickname"
+    maxlength="12"
+    placeholder="輸入你的匿名暱稱"
+>
 
-        <div id="status">
-            等待其他玩家加入...
-        </div>
+<p class="hint">
+輸入匿名暱稱即可參賽
+</p>
 
-    </div>
+<button
+    class="join-btn"
+    onclick="joinRoom()">
+🚪 加入遊戲
+</button>
 
-
-    <!-- 猜拳區 -->
-    <div id="gameArea" class="card">
-
-        <h2>請選擇你的出拳</h2>
-
-        <div class="choices">
-
-            <button
-                class="choice"
-                onclick="choose('rock')"
-            >
-                ✊
-            </button>
-
-            <button
-                class="choice"
-                onclick="choose('scissors')"
-            >
-                ✌️
-            </button>
-
-            <button
-                class="choice"
-                onclick="choose('paper')"
-            >
-                🖐️
-            </button>
-
-        </div>
-
-        <div id="result"></div>
-
-
-        <!-- 只有房主看得到 -->
-        <div
-            id="hostControls"
-            class="host-controls"
-        >
-
-            <div class="host-label">
-                👑 房主控制
-            </div>
-
-            <button
-                class="normal-btn restart-btn"
-                onclick="restartGame()"
-            >
-                🔄 再玩一局
-            </button>
-
-            <button
-                class="normal-btn end-btn"
-                onclick="endGame()"
-            >
-                🛑 結束遊戲
-            </button>
-
-        </div>
-
-    </div>
-
-
-    <!-- 遊戲結束 -->
-    <div id="endedArea" class="card">
-
-        <div class="ended-icon">
-            🏁
-        </div>
-
-        <h2>遊戲已結束</h2>
-
-        <p id="endedText">
-            房主已經結束這個猜拳房間。
-        </p>
-
-        <p class="hint">
-            這個邀請連結已無法再加入。
-        </p>
-
-        <button
-            class="normal-btn secondary-btn"
-            onclick="goHome()"
-        >
-            🏠 回到首頁
-        </button>
-
-    </div>
+</div>
 
 </div>
 
 
 <script type="module">
 
-    import { initializeApp }
-    from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import {
+    initializeApp
+}
+from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
-    import {
-        getFirestore,
-        doc,
-        setDoc,
-        getDoc,
-        updateDoc,
-        onSnapshot,
-        serverTimestamp,
-        runTransaction
-    }
-    from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
-
-
-    // ======================================
-    // Firebase
-    // ======================================
-
-    const firebaseConfig = {
-
-        apiKey:
-        "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
-
-        authDomain:
-        "janken-game-69aa6.firebaseapp.com",
-
-        projectId:
-        "janken-game-69aa6",
-
-        storageBucket:
-        "janken-game-69aa6.firebasestorage.app",
-
-        messagingSenderId:
-        "676529713314",
-
-        appId:
-        "1:676529713314:web:3e127ae463d68a250a27fb",
-
-        measurementId:
-        "G-BK85KK19FG"
-
-    };
+import {
+    getFirestore,
+    doc,
+    getDoc,
+    setDoc,
+    runTransaction,
+    serverTimestamp
+}
+from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
-    const app =
-        initializeApp(
-            firebaseConfig
+const firebaseConfig = {
+
+    apiKey:
+    "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
+
+    authDomain:
+    "janken-game-69aa6.firebaseapp.com",
+
+    projectId:
+    "janken-game-69aa6",
+
+    storageBucket:
+    "janken-game-69aa6.firebasestorage.app",
+
+    messagingSenderId:
+    "676529713314",
+
+    appId:
+    "1:676529713314:web:3e127ae463d68a250a27fb",
+
+    measurementId:
+    "G-BK85KK19FG"
+};
+
+
+const app =
+    initializeApp(firebaseConfig);
+
+const db =
+    getFirestore(app);
+
+
+// ==========================================
+// 每個分頁自己的匿名 ID
+// ==========================================
+
+function getPlayerId() {
+
+    let id =
+        sessionStorage.getItem(
+            "jankenPlayerId"
         );
 
+    if (!id) {
 
-    const db =
-        getFirestore(
-            app
-        );
+        if (crypto.randomUUID) {
 
+            id =
+                "p_" +
+                crypto.randomUUID();
 
-    // ======================================
-    // 狀態
-    // ======================================
+        } else {
 
-    let currentRoom =
-        null;
-
-    let currentNickname =
-        null;
-
-    let unsubscribeRoom =
-        null;
-
-    let currentRoomData =
-        null;
-
-    let isHost =
-        false;
-
-
-    // ======================================
-    // 匿名玩家 ID
-    // 每個分頁 / session 獨立
-    // ======================================
-
-    function getPlayerId() {
-
-        let id =
-            sessionStorage.getItem(
-                "jankenPlayerId"
-            );
-
-
-        if (!id) {
-
-            if (
-                crypto.randomUUID
-            ) {
-
-                id =
-                    "p_" +
-                    crypto.randomUUID();
-
-            }
-
-            else {
-
-                id =
-                    "p_" +
-                    Date.now() +
-                    "_" +
-                    Math.random()
-                    .toString(36)
-                    .substring(2);
-
-            }
-
-
-            sessionStorage.setItem(
-                "jankenPlayerId",
-                id
-            );
-
+            id =
+                "p_" +
+                Date.now() +
+                "_" +
+                Math.random()
+                .toString(36)
+                .substring(2);
         }
 
+        sessionStorage.setItem(
+            "jankenPlayerId",
+            id
+        );
+    }
 
-        return id;
+    return id;
+}
 
+
+const playerId =
+    getPlayerId();
+
+
+// ==========================================
+// 看網址是不是邀請連結
+// ==========================================
+
+const params =
+    new URLSearchParams(
+        window.location.search
+    );
+
+const invitedRoom =
+    params.get("room");
+
+
+if (
+    invitedRoom &&
+    /^\d{4}$/.test(invitedRoom)
+) {
+
+    document
+    .getElementById("createArea")
+    .style.display =
+        "none";
+
+    document
+    .getElementById("inviteArea")
+    .style.display =
+        "block";
+
+    document
+    .getElementById("inviteRoomNumber")
+    .innerText =
+        invitedRoom;
+}
+
+
+// ==========================================
+// 房號
+// ==========================================
+
+function generateRoomCode() {
+
+    return Math.floor(
+        1000 +
+        Math.random() * 9000
+    ).toString();
+}
+
+
+// ==========================================
+// 建立遊戲
+// ==========================================
+
+window.createRoom =
+async function() {
+
+    const nickname =
+        document
+        .getElementById("hostNickname")
+        .value
+        .trim();
+
+    if (!nickname) {
+
+        alert(
+            "請輸入匿名暱稱"
+        );
+
+        return;
     }
 
 
-    const playerId =
-        getPlayerId();
+    try {
+
+        let roomCode =
+            generateRoomCode();
+
+        let roomRef =
+            doc(
+                db,
+                "rooms",
+                roomCode
+            );
+
+        let roomSnap =
+            await getDoc(
+                roomRef
+            );
 
 
-    // ======================================
-    // 網址房號
-    // ======================================
-
-    const params =
-        new URLSearchParams(
-            window.location.search
-        );
-
-
-    const invitedRoom =
-        params.get(
-            "room"
-        );
-
-
-    // ======================================
-    // 初始化
-    // ======================================
-
-    async function initializePage() {
-
-        if (
-            invitedRoom &&
-            /^\d{4}$/.test(
-                invitedRoom
-            )
+        while (
+            roomSnap.exists()
         ) {
 
-            const roomRef =
-                doc(
-                    db,
-                    "rooms",
-                    invitedRoom
-                );
-
-
-            try {
-
-                const roomSnap =
-                    await getDoc(
-                        roomRef
-                    );
-
-
-                if (
-                    !roomSnap.exists()
-                ) {
-
-                    showEndedScreen(
-                        "找不到這個房間"
-                    );
-
-                    return;
-
-                }
-
-
-                const data =
-                    roomSnap.data();
-
-
-                if (
-                    data.status ===
-                    "ended"
-                ) {
-
-                    showEndedScreen();
-
-                    return;
-
-                }
-
-
-                document
-                .getElementById(
-                    "normalLobbyArea"
-                )
-                .style.display =
-                    "none";
-
-
-                document
-                .getElementById(
-                    "inviteLobbyArea"
-                )
-                .style.display =
-                    "block";
-
-
-                document
-                .getElementById(
-                    "inviteRoomCode"
-                )
-                .innerText =
-                    invitedRoom;
-
-            }
-
-            catch (error) {
-
-                console.error(
-                    error
-                );
-
-            }
-
-        }
-
-    }
-
-
-    // ======================================
-    // 暱稱
-    // ======================================
-
-    function getNormalNickname() {
-
-        const nickname =
-            document
-            .getElementById(
-                "nicknameInput"
-            )
-            .value
-            .trim();
-
-
-        if (!nickname) {
-
-            alert(
-                "請先輸入匿名暱稱"
-            );
-
-            return null;
-
-        }
-
-
-        currentNickname =
-            nickname;
-
-
-        return nickname;
-
-    }
-
-
-    function getInviteNickname() {
-
-        const nickname =
-            document
-            .getElementById(
-                "inviteNicknameInput"
-            )
-            .value
-            .trim();
-
-
-        if (!nickname) {
-
-            alert(
-                "請先輸入匿名暱稱"
-            );
-
-            return null;
-
-        }
-
-
-        currentNickname =
-            nickname;
-
-
-        return nickname;
-
-    }
-
-
-    // ======================================
-    // 房號
-    // ======================================
-
-    function generateRoomCode() {
-
-        return Math.floor(
-            1000 +
-            Math.random() *
-            9000
-        )
-        .toString();
-
-    }
-
-
-    // ======================================
-    // 建立房間
-    // ======================================
-
-    window.createRoom =
-    async function() {
-
-        const nickname =
-            getNormalNickname();
-
-
-        if (!nickname) {
-
-            return;
-
-        }
-
-
-        try {
-
-            let roomCode =
+            roomCode =
                 generateRoomCode();
 
-
-            let roomRef =
+            roomRef =
                 doc(
                     db,
                     "rooms",
                     roomCode
                 );
 
-
-            let roomSnap =
+            roomSnap =
                 await getDoc(
                     roomRef
                 );
-
-
-            while (
-                roomSnap.exists()
-            ) {
-
-                roomCode =
-                    generateRoomCode();
-
-
-                roomRef =
-                    doc(
-                        db,
-                        "rooms",
-                        roomCode
-                    );
-
-
-                roomSnap =
-                    await getDoc(
-                        roomRef
-                    );
-
-            }
-
-
-            await setDoc(
-                roomRef,
-                {
-
-                    createdAt:
-                        serverTimestamp(),
-
-                    hostId:
-                        playerId,
-
-                    status:
-                        "waiting",
-
-                    round:
-                        1,
-
-                    players: {
-
-                        [playerId]: {
-
-                            nickname:
-                                nickname,
-
-                            choice:
-                                null,
-
-                            ready:
-                                false
-
-                        }
-
-                    }
-
-                }
-            );
-
-
-            enterRoom(
-                roomCode
-            );
-
-        }
-
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-
-            alert(
-                "建立房間失敗：" +
-                error.message
-            );
-
-        }
-
-    };
-
-
-    // ======================================
-    // 手動加入
-    // ======================================
-
-    window.manualJoinRoom =
-    async function() {
-
-        const nickname =
-            getNormalNickname();
-
-
-        if (!nickname) {
-
-            return;
-
         }
 
 
-        const roomCode =
-            document
-            .getElementById(
-                "roomInput"
-            )
-            .value
-            .trim();
+        await setDoc(
+            roomRef,
+            {
 
+                hostId:
+                    playerId,
 
-        await joinRoomByCode(
-            roomCode,
-            nickname
-        );
+                status:
+                    "playing",
 
-    };
+                round:
+                    1,
 
+                createdAt:
+                    serverTimestamp(),
 
-    // ======================================
-    // 邀請加入
-    // ======================================
+                players: {
 
-    window.joinInvitedRoom =
-    async function() {
-
-        const nickname =
-            getInviteNickname();
-
-
-        if (!nickname) {
-
-            return;
-
-        }
-
-
-        await joinRoomByCode(
-            invitedRoom,
-            nickname
-        );
-
-    };
-
-
-    // ======================================
-    // 加入房間
-    // 用 transaction 避免覆蓋其他玩家
-    // ======================================
-
-    async function joinRoomByCode(
-        roomCode,
-        nickname
-    ) {
-
-        if (
-            !/^\d{4}$/.test(
-                roomCode
-            )
-        ) {
-
-            alert(
-                "房號格式錯誤"
-            );
-
-            return;
-
-        }
-
-
-        const roomRef =
-            doc(
-                db,
-                "rooms",
-                roomCode
-            );
-
-
-        try {
-
-            await runTransaction(
-                db,
-                async (
-                    transaction
-                ) => {
-
-                    const roomSnap =
-                        await transaction.get(
-                            roomRef
-                        );
-
-
-                    if (
-                        !roomSnap.exists()
-                    ) {
-
-                        throw new Error(
-                            "找不到這個房間"
-                        );
-
-                    }
-
-
-                    const data =
-                        roomSnap.data();
-
-
-                    if (
-                        data.status ===
-                        "ended"
-                    ) {
-
-                        throw new Error(
-                            "這個遊戲已經結束"
-                        );
-
-                    }
-
-
-                    const players =
-                        {
-                            ...(
-                                data.players ||
-                                {}
-                            )
-                        };
-
-
-                    const oldPlayer =
-                        players[
-                            playerId
-                        ];
-
-
-                    players[
-                        playerId
-                    ] = {
+                    [playerId]: {
 
                         nickname:
                             nickname,
 
+                        status:
+                            "active",
+
                         choice:
-                            oldPlayer
-                            ? oldPlayer.choice
-                            : null,
+                            null,
 
                         ready:
-                            oldPlayer
-                            ? oldPlayer.ready
-                            : false
-
-                    };
-
-
-                    transaction.update(
-                        roomRef,
-                        {
-                            players:
-                                players
-                        }
-                    );
-
+                            false
+                    }
                 }
-            );
-
-
-            enterRoom(
-                roomCode
-            );
-
-        }
-
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-
-            if (
-                error.message ===
-                "這個遊戲已經結束"
-            ) {
-
-                showEndedScreen();
-
-                return;
-
             }
+        );
 
 
-            alert(
-                "加入房間失敗：" +
-                error.message
-            );
+        sessionStorage.setItem(
+            "jankenNickname",
+            nickname
+        );
 
-        }
-
-    }
-
-
-    // ======================================
-    // 進房
-    // ======================================
-
-    function enterRoom(
-        roomCode
-    ) {
-
-        currentRoom =
-            roomCode;
-
-
-        document
-        .getElementById(
-            "normalLobbyArea"
-        )
-        .style.display =
-            "none";
-
-
-        document
-        .getElementById(
-            "inviteLobbyArea"
-        )
-        .style.display =
-            "none";
-
-
-        document
-        .getElementById(
-            "endedArea"
-        )
-        .style.display =
-            "none";
-
-
-        document
-        .getElementById(
-            "roomArea"
-        )
-        .style.display =
-            "block";
-
-
-        document
-        .getElementById(
-            "gameArea"
-        )
-        .style.display =
-            "block";
-
-
-        document
-        .getElementById(
-            "roomCodeDisplay"
-        )
-        .innerText =
-            roomCode;
-
-
-        listenRoom(
+        sessionStorage.setItem(
+            "jankenRoom",
             roomCode
         );
 
+
+        window.location.href =
+            "game.html?room=" +
+            roomCode;
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+        alert(
+            "建立遊戲失敗：" +
+            error.message
+        );
+    }
+};
+
+
+// ==========================================
+// 加入遊戲
+// ==========================================
+
+window.joinRoom =
+async function() {
+
+    const nickname =
+        document
+        .getElementById("playerNickname")
+        .value
+        .trim();
+
+    if (!nickname) {
+
+        alert(
+            "請輸入匿名暱稱"
+        );
+
+        return;
     }
 
 
-    // ======================================
-    // 複製邀請
-    // ======================================
-
-    window.copyInviteLink =
-    async function() {
-
-        if (!currentRoom) {
-
-            return;
-
-        }
-
-
-        const inviteUrl =
-            "https://mayimai13.github.io/janken-game/?room=" +
-            encodeURIComponent(
-                currentRoom
-            );
-
-
-        try {
-
-            await navigator
-            .clipboard
-            .writeText(
-                inviteUrl
-            );
-
-
-            document
-            .getElementById(
-                "copyMessage"
-            )
-            .innerText =
-                "✅ 邀請連結已複製，直接貼到群組即可";
-
-        }
-
-        catch (error) {
-
-            prompt(
-                "請複製邀請連結：",
-                inviteUrl
-            );
-
-        }
-
-    };
-
-
-    // ======================================
-    // 即時監聽
-    // ======================================
-
-    function listenRoom(
-        roomCode
+    if (
+        !invitedRoom
     ) {
 
-        if (
-            unsubscribeRoom
-        ) {
+        alert(
+            "沒有房間號碼"
+        );
 
-            unsubscribeRoom();
-
-        }
-
-
-        const roomRef =
-            doc(
-                db,
-                "rooms",
-                roomCode
-            );
+        return;
+    }
 
 
-        unsubscribeRoom =
-        onSnapshot(
+    const roomRef =
+        doc(
+            db,
+            "rooms",
+            invitedRoom
+        );
 
-            roomRef,
 
-            (snapshot) => {
+    try {
+
+        await runTransaction(
+            db,
+            async transaction => {
+
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
+
 
                 if (
                     !snapshot.exists()
                 ) {
 
-                    showEndedScreen(
-                        "房間不存在"
+                    throw new Error(
+                        "找不到這個遊戲"
                     );
-
-                    return;
-
                 }
 
 
@@ -1222,968 +492,75 @@
                     snapshot.data();
 
 
-                currentRoomData =
-                    data;
-
-
                 if (
                     data.status ===
-                    "ended"
+                    "finished"
                 ) {
 
-                    showEndedScreen();
-
-                    return;
-
-                }
-
-
-                isHost =
-                    data.hostId ===
-                    playerId;
-
-
-                updateHostControls();
-
-
-                const players =
-                    data.players ||
-                    {};
-
-
-                renderPlayers(
-                    players,
-                    data.hostId
-                );
-
-
-                updateMyButtons(
-                    players
-                );
-
-
-                checkResult(
-                    players
-                );
-
-            },
-
-            (error) => {
-
-                console.error(
-                    error
-                );
-
-
-                document
-                .getElementById(
-                    "status"
-                )
-                .innerText =
-                    "❌ 房間連線失敗";
-
-            }
-
-        );
-
-    }
-
-
-    // ======================================
-    // 房主控制
-    // ======================================
-
-    function updateHostControls() {
-
-        document
-        .getElementById(
-            "hostControls"
-        )
-        .style.display =
-            isHost
-            ? "block"
-            : "none";
-
-    }
-
-
-    // ======================================
-    // 玩家列表
-    // ======================================
-
-    function renderPlayers(
-        players,
-        hostId
-    ) {
-
-        const list =
-            document
-            .getElementById(
-                "playerList"
-            );
-
-
-        list.innerHTML =
-            "";
-
-
-        Object.entries(
-            players
-        )
-        .forEach(
-            ([id, player]) => {
-
-                const row =
-                    document
-                    .createElement(
-                        "div"
+                    throw new Error(
+                        "這場遊戲已經結束"
                     );
-
-
-                row.className =
-                    "player-row";
-
-
-                let name =
-                    player.nickname ||
-                    "匿名玩家";
-
-
-                if (
-                    id ===
-                    playerId
-                ) {
-
-                    name +=
-                        "（你）";
-
                 }
 
 
-                if (
-                    id ===
-                    hostId
-                ) {
-
-                    name +=
-                        " 👑 房主";
-
-                }
+                const players = {
+                    ...(data.players || {})
+                };
 
 
-                row.innerText =
-                    name +
-                    "　" +
-                    (
-                        player.ready
-                        ? "✅ 已出拳"
-                        : "⏳ 尚未出拳"
-                    );
+                players[playerId] = {
+
+                    nickname:
+                        nickname,
+
+                    status:
+                        "active",
+
+                    choice:
+                        null,
+
+                    ready:
+                        false
+                };
 
 
-                list.appendChild(
-                    row
+                transaction.update(
+                    roomRef,
+                    {
+                        players:
+                            players
+                    }
                 );
-
-            }
-        );
-
-    }
-
-
-    // ======================================
-    // 自己按鈕狀態
-    // ======================================
-
-    function updateMyButtons(
-        players
-    ) {
-
-        const me =
-            players[
-                playerId
-            ];
-
-
-        const disabled =
-            me &&
-            me.ready;
-
-
-        document
-        .querySelectorAll(
-            ".choice"
-        )
-        .forEach(
-            button => {
-
-                button.disabled =
-                    !!disabled;
-
-            }
-        );
-
-    }
-
-
-    // ======================================
-    // 出拳
-    // transaction 避免覆蓋
-    // ======================================
-
-    window.choose =
-    async function(choice) {
-
-        if (
-            !currentRoom ||
-            !currentNickname
-        ) {
-
-            return;
-
-        }
-
-
-        const roomRef =
-            doc(
-                db,
-                "rooms",
-                currentRoom
-            );
-
-
-        try {
-
-            await runTransaction(
-                db,
-                async (
-                    transaction
-                ) => {
-
-                    const roomSnap =
-                        await transaction.get(
-                            roomRef
-                        );
-
-
-                    if (
-                        !roomSnap.exists()
-                    ) {
-
-                        throw new Error(
-                            "房間不存在"
-                        );
-
-                    }
-
-
-                    const data =
-                        roomSnap.data();
-
-
-                    if (
-                        data.status ===
-                        "ended"
-                    ) {
-
-                        throw new Error(
-                            "遊戲已經結束"
-                        );
-
-                    }
-
-
-                    const players =
-                        {
-                            ...(
-                                data.players ||
-                                {}
-                            )
-                        };
-
-
-                    if (
-                        !players[
-                            playerId
-                        ]
-                    ) {
-
-                        throw new Error(
-                            "你不在這個房間中"
-                        );
-
-                    }
-
-
-                    players[
-                        playerId
-                    ] = {
-
-                        ...players[
-                            playerId
-                        ],
-
-                        nickname:
-                            currentNickname,
-
-                        choice:
-                            choice,
-
-                        ready:
-                            true
-
-                    };
-
-
-                    transaction.update(
-                        roomRef,
-                        {
-                            players:
-                                players
-                        }
-                    );
-
-                }
-            );
-
-        }
-
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-
-            alert(
-                "出拳失敗：" +
-                error.message
-            );
-
-        }
-
-    };
-
-
-    // ======================================
-    // 檢查結果
-    // ======================================
-
-    function checkResult(
-        players
-    ) {
-
-        const playerArray =
-            Object.values(
-                players
-            );
-
-
-        if (
-            playerArray.length <
-            2
-        ) {
-
-            document
-            .getElementById(
-                "status"
-            )
-            .innerText =
-                "等待其他玩家加入...";
-
-
-            document
-            .getElementById(
-                "result"
-            )
-            .innerHTML =
-                "";
-
-
-            return;
-
-        }
-
-
-        const allReady =
-            playerArray.every(
-                player =>
-                    player.ready
-            );
-
-
-        if (
-            !allReady
-        ) {
-
-            const readyCount =
-                playerArray
-                .filter(
-                    player =>
-                        player.ready
-                )
-                .length;
-
-
-            document
-            .getElementById(
-                "status"
-            )
-            .innerText =
-                "已有 " +
-                readyCount +
-                " / " +
-                playerArray.length +
-                " 位玩家出拳";
-
-
-            document
-            .getElementById(
-                "result"
-            )
-            .innerHTML =
-                "";
-
-
-            return;
-
-        }
-
-
-        showResult(
-            playerArray
-        );
-
-    }
-
-
-    // ======================================
-    // 公布結果
-    // ======================================
-
-    function showResult(
-        players
-    ) {
-
-        const emoji = {
-
-            rock:
-                "✊ 石頭",
-
-            scissors:
-                "✌️ 剪刀",
-
-            paper:
-                "🖐️ 布"
-
-        };
-
-
-        let html =
-            "<h3>🎊 全員完成</h3>";
-
-
-        players.forEach(
-            player => {
-
-                html +=
-                    escapeHtml(
-                        player.nickname
-                    ) +
-                    "： " +
-                    emoji[
-                        player.choice
-                    ] +
-                    "<br>";
-
             }
         );
 
 
-        const choices =
-            [
-                ...new Set(
-                    players.map(
-                        player =>
-                            player.choice
-                    )
-                )
-            ];
+        sessionStorage.setItem(
+            "jankenNickname",
+            nickname
+        );
+
+        sessionStorage.setItem(
+            "jankenRoom",
+            invitedRoom
+        );
 
-
-        if (
-            choices.length === 1 ||
-            choices.length === 3
-        ) {
-
-            html +=
-                "<br><strong>🤝 平手！</strong>";
-
-        }
-
-        else {
-
-            let winningChoice =
-                "";
-
-
-            if (
-                choices.includes(
-                    "rock"
-                ) &&
-                choices.includes(
-                    "scissors"
-                )
-            ) {
-
-                winningChoice =
-                    "rock";
-
-            }
-
-            else if (
-                choices.includes(
-                    "scissors"
-                ) &&
-                choices.includes(
-                    "paper"
-                )
-            ) {
-
-                winningChoice =
-                    "scissors";
-
-            }
-
-            else if (
-                choices.includes(
-                    "paper"
-                ) &&
-                choices.includes(
-                    "rock"
-                )
-            ) {
-
-                winningChoice =
-                    "paper";
-
-            }
-
-
-            const winners =
-                players
-                .filter(
-                    player =>
-                        player.choice ===
-                        winningChoice
-                )
-                .map(
-                    player =>
-                        escapeHtml(
-                            player.nickname
-                        )
-                );
-
-
-            html +=
-                "<br><strong>🏆 勝利：" +
-                winners.join("、") +
-                "</strong>";
-
-        }
-
-
-        document
-        .getElementById(
-            "result"
-        )
-        .innerHTML =
-            html;
-
-
-        document
-        .getElementById(
-            "status"
-        )
-        .innerText =
-            isHost
-            ? "🎉 本局完成，你可以開始下一局或結束遊戲"
-            : "🎉 本局完成，等待房主決定下一步";
-
-    }
-
-
-    // ======================================
-    // 再玩一局
-    // ======================================
-
-    window.restartGame =
-    async function() {
-
-        if (
-            !isHost ||
-            !currentRoom
-        ) {
-
-            alert(
-                "只有房主可以開始下一局"
-            );
-
-            return;
-
-        }
-
-
-        const roomRef =
-            doc(
-                db,
-                "rooms",
-                currentRoom
-            );
-
-
-        try {
-
-            await runTransaction(
-                db,
-                async (
-                    transaction
-                ) => {
-
-                    const roomSnap =
-                        await transaction.get(
-                            roomRef
-                        );
-
-
-                    if (
-                        !roomSnap.exists()
-                    ) {
-
-                        throw new Error(
-                            "房間不存在"
-                        );
-
-                    }
-
-
-                    const data =
-                        roomSnap.data();
-
-
-                    if (
-                        data.hostId !==
-                        playerId
-                    ) {
-
-                        throw new Error(
-                            "你不是房主"
-                        );
-
-                    }
-
-
-                    const players =
-                        {
-                            ...(
-                                data.players ||
-                                {}
-                            )
-                        };
-
-
-                    Object.keys(
-                        players
-                    )
-                    .forEach(
-                        id => {
-
-                            players[
-                                id
-                            ] = {
-
-                                ...players[
-                                    id
-                                ],
-
-                                choice:
-                                    null,
-
-                                ready:
-                                    false
-
-                            };
-
-                        }
-                    );
-
-
-                    transaction.update(
-                        roomRef,
-                        {
-
-                            players:
-                                players,
-
-                            status:
-                                "waiting",
-
-                            round:
-                                (
-                                    data.round ||
-                                    1
-                                ) + 1
-
-                        }
-                    );
-
-                }
-            );
-
-
-            document
-            .getElementById(
-                "result"
-            )
-            .innerHTML =
-                "";
-
-        }
-
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-
-            alert(
-                "開始下一局失敗：" +
-                error.message
-            );
-
-        }
-
-    };
-
-
-    // ======================================
-    // 結束遊戲
-    // ======================================
-
-    window.endGame =
-    async function() {
-
-        if (
-            !isHost ||
-            !currentRoom
-        ) {
-
-            alert(
-                "只有房主可以結束遊戲"
-            );
-
-            return;
-
-        }
-
-
-        const confirmEnd =
-            confirm(
-                "確定要結束這個猜拳房間嗎？"
-            );
-
-
-        if (
-            !confirmEnd
-        ) {
-
-            return;
-
-        }
-
-
-        const roomRef =
-            doc(
-                db,
-                "rooms",
-                currentRoom
-            );
-
-
-        try {
-
-            await runTransaction(
-                db,
-                async (
-                    transaction
-                ) => {
-
-                    const roomSnap =
-                        await transaction.get(
-                            roomRef
-                        );
-
-
-                    if (
-                        !roomSnap.exists()
-                    ) {
-
-                        throw new Error(
-                            "房間不存在"
-                        );
-
-                    }
-
-
-                    const data =
-                        roomSnap.data();
-
-
-                    if (
-                        data.hostId !==
-                        playerId
-                    ) {
-
-                        throw new Error(
-                            "你不是房主"
-                        );
-
-                    }
-
-
-                    transaction.update(
-                        roomRef,
-                        {
-
-                            status:
-                                "ended",
-
-                            endedAt:
-                                serverTimestamp()
-
-                        }
-                    );
-
-                }
-            );
-
-        }
-
-        catch (error) {
-
-            console.error(
-                error
-            );
-
-
-            alert(
-                "結束遊戲失敗：" +
-                error.message
-            );
-
-        }
-
-    };
-
-
-    // ======================================
-    // 結束畫面
-    // ======================================
-
-    function showEndedScreen(
-        customText = null
-    ) {
-
-        document
-        .getElementById(
-            "normalLobbyArea"
-        )
-        .style.display =
-            "none";
-
-
-        document
-        .getElementById(
-            "inviteLobbyArea"
-        )
-        .style.display =
-            "none";
-
-
-        document
-        .getElementById(
-            "roomArea"
-        )
-        .style.display =
-            "none";
-
-
-        document
-        .getElementById(
-            "gameArea"
-        )
-        .style.display =
-            "none";
-
-
-        document
-        .getElementById(
-            "endedArea"
-        )
-        .style.display =
-            "block";
-
-
-        document
-        .getElementById(
-            "endedText"
-        )
-        .innerText =
-            customText ||
-            "房主已經結束這個猜拳房間。";
-
-    }
-
-
-    // ======================================
-    // 回首頁
-    // ======================================
-
-    window.goHome =
-    function() {
 
         window.location.href =
-            "https://mayimai13.github.io/janken-game/";
-
-    };
-
-
-    // ======================================
-    // 防 HTML
-    // ======================================
-
-    function escapeHtml(
-        text
-    ) {
-
-        const div =
-            document
-            .createElement(
-                "div"
-            );
-
-
-        div.textContent =
-            text;
-
-
-        return div.innerHTML;
+            "game.html?room=" +
+            invitedRoom;
 
     }
 
+    catch(error) {
 
-    initializePage();
+        console.error(error);
+
+        alert(
+            error.message
+        );
+    }
+};
 
 </script>
 

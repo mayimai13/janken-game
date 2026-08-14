@@ -23,7 +23,7 @@ body {
 }
 
 .container {
-    max-width: 560px;
+    max-width: 580px;
     margin: auto;
     padding: 25px 18px 60px;
 }
@@ -34,10 +34,6 @@ body {
     padding: 24px;
     margin-top: 18px;
     box-shadow: 0 4px 16px rgba(0,0,0,.10);
-}
-
-h1 {
-    margin-bottom: 5px;
 }
 
 .room-number {
@@ -63,9 +59,14 @@ button {
     border-radius: 12px;
     padding: 13px 20px;
     margin: 7px;
-    font-size: 17px;
+    font-size: 16px;
     cursor: pointer;
     color: white;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
 }
 
 .share-btn {
@@ -74,11 +75,6 @@ button {
 
 .close-join-btn {
     background: #ff9800;
-}
-
-.closed-join-btn {
-    background: #888;
-    cursor: default;
 }
 
 .start-btn {
@@ -91,6 +87,14 @@ button {
 
 .next-btn {
     background: #7b61ff;
+}
+
+.group-btn {
+    background: #7b61ff;
+}
+
+.normal-btn {
+    background: #555;
 }
 
 .choice-area {
@@ -109,11 +113,6 @@ button {
     box-shadow: 0 3px 12px rgba(0,0,0,.15);
 }
 
-.choice:disabled {
-    opacity: .3;
-    cursor: not-allowed;
-}
-
 .player-list {
     text-align: left;
 }
@@ -127,36 +126,8 @@ button {
     color: #999;
 }
 
-#hostControls {
-    display: none;
-    margin-top: 20px;
-    padding-top: 18px;
-    border-top: 1px solid #eee;
-}
-
-#startRoundBtn,
-#endRoundBtn,
-#nextRoundBtn {
-    display: none;
-}
-
-#spectatorMessage {
-    display: none;
-    padding: 18px;
-    margin-top: 15px;
-    background: #fafafa;
-    border-radius: 12px;
+.temp-watch {
     color: #777;
-}
-
-#winnerArea {
-    display: none;
-}
-
-.winner {
-    font-size: 30px;
-    font-weight: bold;
-    margin: 20px;
 }
 
 .host-box {
@@ -181,10 +152,55 @@ button {
     margin-top: 20px;
 }
 
+#hostControls,
+#groupDecisionArea,
+#groupControlArea {
+    display: none;
+}
 
-/* =========================
-   討論區
-========================= */
+#startRoundBtn,
+#endRoundBtn,
+#nextRoundBtn {
+    display: none;
+}
+
+#watchMessage {
+    display: none;
+    background: #fafafa;
+    padding: 18px;
+    margin-top: 15px;
+    border-radius: 12px;
+}
+
+#winnerArea {
+    display: none;
+}
+
+.winner {
+    font-size: 30px;
+    font-weight: bold;
+}
+
+.group-box {
+    padding: 14px;
+    margin: 10px 0;
+    background: #fafafa;
+    border-radius: 12px;
+    text-align: left;
+}
+
+.group-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.group-status {
+    color: #777;
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+/* Chat */
 
 .chat-card {
     text-align: left;
@@ -197,19 +213,17 @@ button {
 #chatMessages {
     height: 300px;
     overflow-y: auto;
-    padding: 10px;
     background: #fafafa;
     border-radius: 12px;
     border: 1px solid #eee;
+    padding: 10px;
 }
 
 .chat-message {
-    margin-bottom: 12px;
     padding: 9px 11px;
     background: white;
     border-radius: 10px;
-    line-height: 1.5;
-    word-break: break-word;
+    margin-bottom: 10px;
 }
 
 .chat-name {
@@ -219,36 +233,34 @@ button {
 
 .chat-text {
     margin-top: 4px;
-    font-size: 15px;
+    word-break: break-word;
 }
 
 .chat-input-area {
     display: flex;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: 10px;
 }
 
 #chatInput {
     flex: 1;
-    box-sizing: border-box;
+    min-width: 0;
+    padding: 12px;
     border: 1px solid #ccc;
     border-radius: 10px;
-    padding: 12px;
     font-size: 16px;
-    min-width: 0;
 }
 
-.chat-send-btn {
+.chat-send {
     background: #1687ff;
     margin: 0;
-    white-space: nowrap;
 }
 
 #chatCount {
     text-align: right;
-    color: #999;
     font-size: 12px;
-    margin-top: 5px;
+    color: #999;
+    margin-top: 4px;
 }
 
 </style>
@@ -260,14 +272,13 @@ button {
 
 <div class="container">
 
+
 <h1>
 🎮 匿名猜拳淘汰賽
 </h1>
 
 
-<!-- ============================== -->
-<!-- 房間資料 -->
-<!-- ============================== -->
+<!-- 房間 -->
 
 <div class="card">
 
@@ -281,13 +292,11 @@ button {
 >
 </div>
 
-
 <div
     id="roundNumber"
     class="round"
 >
 </div>
-
 
 <div
     id="roundState"
@@ -301,31 +310,23 @@ button {
     class="share-btn"
     onclick="copyInviteLink()"
 >
-
 📋 複製邀請連結
-
 </button>
 
 
 <div id="copyMessage">
 </div>
 
-
 <div id="joinStatus">
-
 🟢 開放加入
-
 </div>
 
 </div>
 
 
-<!-- ============================== -->
-<!-- 玩家名單 -->
-<!-- ============================== -->
+<!-- 玩家 -->
 
 <div class="card">
-
 
 <div
     id="hostBox"
@@ -333,11 +334,9 @@ button {
 >
 </div>
 
-
 <h2>
 👥 參賽玩家
 </h2>
-
 
 <div
     id="playerList"
@@ -345,77 +344,50 @@ button {
 >
 </div>
 
-
 <div id="status">
-
 等待玩家...
-
 </div>
 
 </div>
 
 
-<!-- ============================== -->
-<!-- 猜拳區 -->
-<!-- ============================== -->
+<!-- 遊戲 -->
 
-<div
-    id="gameArea"
-    class="card"
->
-
+<div class="card">
 
 <h2 id="gameTitle">
-
 🟢 等待其他參賽者加入
-
 </h2>
 
 
 <div class="choice-area">
 
-
 <button
     class="choice"
     onclick="choose('rock')"
 >
-
 ✊
-
 </button>
-
 
 <button
     class="choice"
     onclick="choose('scissors')"
 >
-
 ✌️
-
 </button>
-
 
 <button
     class="choice"
     onclick="choose('paper')"
 >
-
 🖐️
-
 </button>
-
 
 </div>
 
 
-<div id="spectatorMessage">
-
-👀 你已被淘汰
-
-<br><br>
-
-現在進入觀看模式
-
+<div id="watchMessage">
+👀 目前為觀賽模式
 </div>
 
 
@@ -423,26 +395,20 @@ button {
 </div>
 
 
-<!-- 房主控制 -->
+<!-- 房主一般控制 -->
 
 <div id="hostControls">
 
-
 <div class="hint">
-
 👑 房主控制
-
 </div>
-
 
 <button
     id="closeJoinBtn"
     class="close-join-btn"
     onclick="closeJoining()"
 >
-
 🔒 結束加入
-
 </button>
 
 
@@ -451,9 +417,7 @@ button {
     class="start-btn"
     onclick="startRound()"
 >
-
 ▶️ 開始淘汰賽
-
 </button>
 
 
@@ -462,9 +426,7 @@ button {
     class="end-round-btn"
     onclick="endRound()"
 >
-
 🛑 結束本輪
-
 </button>
 
 
@@ -473,20 +435,84 @@ button {
     class="next-btn"
     onclick="prepareNextRound()"
 >
-
 🔄 準備下一輪
+</button>
 
+</div>
+
+</div>
+
+
+<!-- 第一輪決策 -->
+
+<div
+    id="groupDecisionArea"
+    class="card"
+>
+
+<h2>
+📊 第一輪完成
+</h2>
+
+<p>
+房主要如何進行下一階段？
+</p>
+
+<div id="firstRoundGroupSummary">
+</div>
+
+
+<button
+    class="group-btn"
+    onclick="enableGroupMode()"
+>
+👥 依第一輪出拳分組
 </button>
 
 
-</div>
+<button
+    class="normal-btn"
+    onclick="continueWithoutGroups()"
+>
+➡️ 不分組，直接判定
+</button>
 
 </div>
 
 
-<!-- ============================== -->
+<!-- 分組控制 -->
+
+<div
+    id="groupControlArea"
+    class="card"
+>
+
+<h2>
+👥 分組淘汰
+</h2>
+
+<p class="hint">
+房主可自行決定哪一組先進行
+</p>
+
+
+<div id="groupList">
+</div>
+
+
+<button
+    id="finishGroupsBtn"
+    class="next-btn"
+    style="display:none;"
+    onclick="finishGroupStage()"
+>
+✅ 分組比賽完成，進入下一輪
+</button>
+
+</div>
+
+
 <!-- 冠軍 -->
-<!-- ============================== -->
 
 <div
     id="winnerArea"
@@ -506,9 +532,7 @@ button {
 </div>
 
 
-<!-- ============================== -->
-<!-- 討論區 -->
-<!-- ============================== -->
+<!-- 聊天 -->
 
 <div class="card chat-card">
 
@@ -516,25 +540,8 @@ button {
 💬 房間討論區
 </h2>
 
-<p
-    class="hint"
-    style="text-align:center;"
->
-房主、參賽者與觀看者都可以聊天
-</p>
-
-
 <div id="chatMessages">
-
-<div
-    class="hint"
-    style="text-align:center;"
->
-尚無訊息
 </div>
-
-</div>
-
 
 <div class="chat-input-area">
 
@@ -545,21 +552,16 @@ button {
 >
 
 <button
-    class="chat-send-btn"
+    class="chat-send"
     onclick="sendMessage()"
 >
-
 送出
-
 </button>
 
 </div>
 
-
 <div id="chatCount">
-
 0 / 100
-
 </div>
 
 </div>
@@ -593,10 +595,6 @@ import {
 }
 from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-
-// ==========================================
-// Firebase
-// ==========================================
 
 const firebaseConfig = {
 
@@ -636,20 +634,14 @@ const db =
     );
 
 
-// ==========================================
-// 玩家資料
-// ==========================================
-
 const playerId =
-    sessionStorage
-    .getItem(
+    sessionStorage.getItem(
         "jankenPlayerId"
     );
 
 
 const nickname =
-    sessionStorage
-    .getItem(
+    sessionStorage.getItem(
         "jankenNickname"
     );
 
@@ -673,7 +665,7 @@ if (
 ) {
 
     alert(
-        "玩家資料不存在，請重新加入遊戲"
+        "資料不存在，請重新加入"
     );
 
 
@@ -699,28 +691,29 @@ let isHost =
     false;
 
 
-// ==========================================
-// 房號
-// ==========================================
+const groupNames = {
 
-document
-.getElementById(
-    "roomNumber"
-)
-.innerText =
-    roomCode;
+    rock:
+        "✊ 石頭組",
+
+    scissors:
+        "✌️ 剪刀組",
+
+    paper:
+        "🖐️ 布組"
+
+};
 
 
-// ==========================================
-// 房間即時監聽
-// ==========================================
+// ======================================
+// 即時監聽
+// ======================================
 
 onSnapshot(
 
     roomRef,
 
     snapshot => {
-
 
         if (
             !snapshot.exists()
@@ -747,35 +740,10 @@ onSnapshot(
 
         document
         .getElementById(
-            "hostBox"
+            "roomNumber"
         )
         .innerText =
-            "👑 房主：" +
-            (
-                roomData.hostNickname ||
-                "主持人"
-            );
-
-
-        renderPlayers(
-            players
-        );
-
-
-        updateJoinStatus();
-
-
-        updateRoundState();
-
-
-        updateGame(
-            players
-        );
-
-
-        updateHostControls(
-            players
-        );
+            roomCode;
 
 
         document
@@ -793,6 +761,18 @@ onSnapshot(
 
         document
         .getElementById(
+            "hostBox"
+        )
+        .innerText =
+            "👑 房主：" +
+            (
+                roomData.hostNickname ||
+                "主持人"
+            );
+
+
+        document
+        .getElementById(
             "hostControls"
         )
         .style.display =
@@ -801,30 +781,33 @@ onSnapshot(
             : "none";
 
 
-        if (
-            roomData.roundStatus ===
-            "ended"
-        ) {
-
-            showRoundResult(
-                players
-            );
-
-        }
-
-        else {
-
-            document
-            .getElementById(
-                "result"
-            )
-            .innerHTML =
-                "";
-
-        }
+        renderPlayers(
+            players
+        );
 
 
-        checkFinalWinner(
+        updateJoinStatus();
+
+
+        updateMainUI(
+            players
+        );
+
+
+        updateHostControls();
+
+
+        updateGroupDecision(
+            players
+        );
+
+
+        updateGroupControl(
+            players
+        );
+
+
+        checkWinner(
             players
         );
 
@@ -833,543 +816,68 @@ onSnapshot(
 );
 
 
-// ==========================================
+// ======================================
 // 加入狀態
-// ==========================================
+// ======================================
 
 function updateJoinStatus() {
-
-    const joinOpen =
-        roomData.joinOpen !==
-        false;
-
 
     document
     .getElementById(
         "joinStatus"
     )
     .innerText =
-        joinOpen
+        roomData.joinOpen !== false
         ? "🟢 開放加入"
         : "🔒 已停止加入";
 
 
-    if (!isHost) {
+    if (
+        !isHost
+    ) {
 
         return;
 
     }
 
 
-    const button =
+    const btn =
         document
         .getElementById(
             "closeJoinBtn"
         );
 
 
-    if (
-        joinOpen
-    ) {
-
-        button.disabled =
-            false;
+    btn.disabled =
+        roomData.joinOpen ===
+        false;
 
 
-        button.innerText =
-            "🔒 結束加入";
-
-
-        button.className =
-            "close-join-btn";
-
-    }
-
-    else {
-
-        button.disabled =
-            true;
-
-
-        button.innerText =
-            "🔒 已停止加入";
-
-
-        button.className =
-            "closed-join-btn";
-
-    }
-
-}
-
-
-// ==========================================
-// 輪次文字
-// ==========================================
-
-function updateRoundState() {
-
-    const box =
-        document
-        .getElementById(
-            "roundState"
-        );
-
-
-    const round =
-        roomData.round ||
-        1;
-
-
-    if (
-        roomData.joinOpen !==
+    btn.innerText =
+        roomData.joinOpen ===
         false
-    ) {
-
-        box.innerText =
-            "🟢 等待參賽者加入";
-
-        return;
-
-    }
-
-
-    if (
-        roomData.roundStatus ===
-        "waiting"
-    ) {
-
-        if (
-            round ===
-            1
-        ) {
-
-            box.innerText =
-                "🔒 報名截止，等待房主開始淘汰賽";
-
-        }
-
-        else {
-
-            box.innerText =
-                "⏳ 第 " +
-                round +
-                " 輪準備中";
-
-        }
-
-
-        return;
-
-    }
-
-
-    if (
-        roomData.roundStatus ===
-        "playing"
-    ) {
-
-        if (
-            round ===
-            1
-        ) {
-
-            box.innerText =
-                "🔥 淘汰賽開始！第 1 輪";
-
-        }
-
-        else {
-
-            box.innerText =
-                "⚔️ 第 " +
-                round +
-                " 輪進行中";
-
-        }
-
-
-        return;
-
-    }
-
-
-    if (
-        roomData.roundStatus ===
-        "ended"
-    ) {
-
-        box.innerText =
-            "🏁 第 " +
-            round +
-            " 輪結束";
-
-    }
+        ? "🔒 已停止加入"
+        : "🔒 結束加入";
 
 }
 
 
-// ==========================================
-// 房主按鈕
-// ==========================================
-
-function updateHostControls(
-    players
-) {
-
-    if (!isHost) {
-
-        return;
-
-    }
-
-
-    const startBtn =
-        document
-        .getElementById(
-            "startRoundBtn"
-        );
-
-
-    const endBtn =
-        document
-        .getElementById(
-            "endRoundBtn"
-        );
-
-
-    const nextBtn =
-        document
-        .getElementById(
-            "nextRoundBtn"
-        );
-
-
-    startBtn.style.display =
-        "none";
-
-
-    endBtn.style.display =
-        "none";
-
-
-    nextBtn.style.display =
-        "none";
-
-
-    if (
-        roomData.joinOpen !==
-        false
-    ) {
-
-        return;
-
-    }
-
-
-    if (
-        roomData.roundStatus ===
-        "waiting"
-    ) {
-
-        startBtn.style.display =
-            "inline-block";
-
-
-        if (
-            (
-                roomData.round ||
-                1
-            ) ===
-            1
-        ) {
-
-            startBtn.innerText =
-                "▶️ 開始淘汰賽";
-
-        }
-
-        else {
-
-            startBtn.innerText =
-                "▶️ 開始本輪";
-
-        }
-
-
-        return;
-
-    }
-
-
-    if (
-        roomData.roundStatus ===
-        "playing"
-    ) {
-
-        endBtn.style.display =
-            "inline-block";
-
-
-        return;
-
-    }
-
-
-    if (
-        roomData.roundStatus ===
-        "ended"
-    ) {
-
-        nextBtn.style.display =
-            "inline-block";
-
-    }
-
-}
-
-
-// ==========================================
-// 結束加入
-// ==========================================
-
-window.closeJoining =
-async function() {
-
-    if (!isHost) {
-
-        return;
-
-    }
-
-
-    const activeCount =
-        Object.values(
-            roomData.players ||
-            {}
-        )
-        .filter(
-            player =>
-                player.status ===
-                "active"
-        )
-        .length;
-
-
-    if (
-        activeCount <
-        2
-    ) {
-
-        alert(
-            "至少需要 2 位參賽玩家才能結束加入"
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        await runTransaction(
-
-            db,
-
-            async transaction => {
-
-
-                const snapshot =
-                    await transaction.get(
-                        roomRef
-                    );
-
-
-                const data =
-                    snapshot.data();
-
-
-                if (
-                    data.hostId !==
-                    playerId
-                ) {
-
-                    throw new Error(
-                        "只有房主可以停止加入"
-                    );
-
-                }
-
-
-                transaction.update(
-
-                    roomRef,
-
-                    {
-
-                        joinOpen:
-                            false
-
-                    }
-
-                );
-
-            }
-
-        );
-
-    }
-
-    catch(error) {
-
-        alert(
-            error.message
-        );
-
-    }
-
-};
-
-
-// ==========================================
-// 開始淘汰賽 / 開始本輪
-// ==========================================
-
-window.startRound =
-async function() {
-
-    if (!isHost) {
-
-        return;
-
-    }
-
-
-    try {
-
-        await runTransaction(
-
-            db,
-
-            async transaction => {
-
-
-                const snapshot =
-                    await transaction.get(
-                        roomRef
-                    );
-
-
-                const data =
-                    snapshot.data();
-
-
-                if (
-                    data.hostId !==
-                    playerId
-                ) {
-
-                    throw new Error(
-                        "只有房主可以開始本輪"
-                    );
-
-                }
-
-
-                if (
-                    data.joinOpen !==
-                    false
-                ) {
-
-                    throw new Error(
-                        "請先結束加入"
-                    );
-
-                }
-
-
-                if (
-                    data.roundStatus !==
-                    "waiting"
-                ) {
-
-                    throw new Error(
-                        "目前不能開始本輪"
-                    );
-
-                }
-
-
-                const activePlayers =
-                    Object.values(
-                        data.players ||
-                        {}
-                    )
-                    .filter(
-                        player =>
-                            player.status ===
-                            "active"
-                    );
-
-
-                if (
-                    activePlayers.length <
-                    2
-                ) {
-
-                    throw new Error(
-                        "至少需要 2 位參賽玩家"
-                    );
-
-                }
-
-
-                transaction.update(
-
-                    roomRef,
-
-                    {
-
-                        roundStatus:
-                            "playing"
-
-                    }
-
-                );
-
-            }
-
-        );
-
-    }
-
-    catch(error) {
-
-        alert(
-            error.message
-        );
-
-    }
-
-};
-
-
-// ==========================================
-// 玩家名單
-// ==========================================
+// ======================================
+// 玩家列表
+// ======================================
 
 function renderPlayers(
     players
 ) {
 
-    const list =
+    const box =
         document
         .getElementById(
             "playerList"
         );
 
 
-    list.innerHTML =
+    box.innerHTML =
         "";
 
 
@@ -1384,8 +892,8 @@ function renderPlayers(
         0
     ) {
 
-        list.innerHTML =
-            "<div class='player'>目前還沒有參賽玩家</div>";
+        box.innerHTML =
+            "<div class='player'>目前沒有參賽玩家</div>";
 
 
         return;
@@ -1440,7 +948,59 @@ function renderPlayers(
 
 
                 text +=
-                    "　👀 觀看中";
+                    "　❌ 已淘汰";
+
+            }
+
+            else if (
+                roomData.groupMode &&
+                roomData.stage ===
+                "group"
+            ) {
+
+                if (
+                    player.group
+                ) {
+
+                    text +=
+                        "　" +
+                        (
+                            groupNames[
+                                player.group
+                            ] ||
+                            ""
+                        );
+
+                }
+
+
+                if (
+                    roomData.activeGroup &&
+                    player.group !==
+                    roomData.activeGroup
+                ) {
+
+                    row.classList.add(
+                        "temp-watch"
+                    );
+
+
+                    text +=
+                        "　👀 觀賽中";
+
+                }
+
+                else if (
+                    player.group ===
+                    roomData.activeGroup
+                ) {
+
+                    text +=
+                        player.ready
+                        ? "　✅ 已出拳"
+                        : "　⏳ 尚未出拳";
+
+                }
 
             }
 
@@ -1461,7 +1021,7 @@ function renderPlayers(
                 else {
 
                     text +=
-                        "　🎮 等待本輪";
+                        "　🎮 等待";
 
                 }
 
@@ -1472,7 +1032,7 @@ function renderPlayers(
                 text;
 
 
-            list.appendChild(
+            box.appendChild(
                 row
             );
 
@@ -1483,19 +1043,30 @@ function renderPlayers(
 }
 
 
-// ==========================================
-// 玩家畫面
-// ==========================================
+// ======================================
+// 主畫面
+// ======================================
 
-function updateGame(
+function updateMainUI(
     players
 ) {
 
     const choiceArea =
-        document
-        .querySelector(
+        document.querySelector(
             ".choice-area"
         );
+
+
+    const buttons =
+        document.querySelectorAll(
+            ".choice"
+        );
+
+
+    const me =
+        players[
+            playerId
+        ];
 
 
     if (
@@ -1516,148 +1087,100 @@ function updateGame(
 
         document
         .getElementById(
-            "spectatorMessage"
+            "watchMessage"
         )
         .style.display =
             "none";
 
     }
 
-    else {
+    else if (
+        !me
+    ) {
 
-        const me =
-            players[
-                playerId
-            ];
+        choiceArea.style.display =
+            "none";
+
+    }
+
+    else if (
+        me.status ===
+        "spectator"
+    ) {
+
+        choiceArea.style.display =
+            "none";
 
 
-        if (!me) {
+        document
+        .getElementById(
+            "gameTitle"
+        )
+        .innerText =
+            "👀 已淘汰";
+
+
+        document
+        .getElementById(
+            "watchMessage"
+        )
+        .style.display =
+            "block";
+
+
+        document
+        .getElementById(
+            "watchMessage"
+        )
+        .innerText =
+            "👀 你已淘汰，目前為觀看模式";
+
+    }
+
+    else if (
+        roomData.stage ===
+        "group"
+    ) {
+
+        if (
+            roomData.activeGroup !==
+            me.group
+        ) {
 
             choiceArea.style.display =
                 "none";
 
-
-            return;
-
-        }
-
-
-        choiceArea.style.display =
-            "flex";
-
-
-        const buttons =
-            document
-            .querySelectorAll(
-                ".choice"
-            );
-
-
-        if (
-            me.status ===
-            "spectator"
-        ) {
 
             document
             .getElementById(
                 "gameTitle"
             )
             .innerText =
-                "👀 觀看模式";
-
-
-            buttons.forEach(
-                button =>
-                    button.disabled =
-                        true
-            );
+                "👀 目前觀賽中";
 
 
             document
             .getElementById(
-                "spectatorMessage"
+                "watchMessage"
             )
             .style.display =
                 "block";
 
-        }
-
-        else {
-
-            document
-            .getElementById(
-                "spectatorMessage"
-            )
-            .style.display =
-                "none";
-
-
-            const round =
-                roomData.round ||
-                1;
-
 
             if (
-                roomData.roundStatus ===
-                "waiting"
-            ) {
-
-                if (
-                    roomData.joinOpen !==
-                    false
-                ) {
-
-                    document
-                    .getElementById(
-                        "gameTitle"
-                    )
-                    .innerText =
-                        "🟢 等待其他參賽者加入";
-
-                }
-
-                else if (
-                    round ===
-                    1
-                ) {
-
-                    document
-                    .getElementById(
-                        "gameTitle"
-                    )
-                    .innerText =
-                        "⏳ 等待房主開始淘汰賽";
-
-                }
-
-                else {
-
-                    document
-                    .getElementById(
-                        "gameTitle"
-                    )
-                    .innerText =
-                        "⏳ 等待房主開始第 " +
-                        round +
-                        " 輪";
-
-                }
-
-            }
-
-            else if (
-                roomData.roundStatus ===
-                "playing"
+                roomData.activeGroup
             ) {
 
                 document
                 .getElementById(
-                    "gameTitle"
+                    "watchMessage"
                 )
                 .innerText =
-                    me.ready
-                    ? "✅ 你已出拳"
-                    : "請選擇你的出拳";
+                    "目前由 " +
+                    groupNames[
+                        roomData.activeGroup
+                    ] +
+                    " 進行比賽";
 
             }
 
@@ -1665,21 +1188,44 @@ function updateGame(
 
                 document
                 .getElementById(
-                    "gameTitle"
+                    "watchMessage"
                 )
                 .innerText =
-                    "🏁 本輪已結束";
+                    "等待房主選擇下一組比賽";
 
             }
 
+        }
+
+        else {
+
+            choiceArea.style.display =
+                "flex";
+
+
+            document
+            .getElementById(
+                "watchMessage"
+            )
+            .style.display =
+                "none";
+
+
+            document
+            .getElementById(
+                "gameTitle"
+            )
+            .innerText =
+                "⚔️ 輪到你的組別";
+
 
             buttons.forEach(
-                button => {
+                btn => {
 
-                    button.disabled =
-                        me.ready ||
+                    btn.disabled =
                         roomData.roundStatus !==
-                        "playing";
+                        "groupPlaying" ||
+                        me.ready;
 
                 }
             );
@@ -1688,63 +1234,452 @@ function updateGame(
 
     }
 
+    else {
 
-    const activePlayers =
+        choiceArea.style.display =
+            "flex";
+
+
+        document
+        .getElementById(
+            "watchMessage"
+        )
+        .style.display =
+            "none";
+
+
+        if (
+            roomData.joinOpen !==
+            false
+        ) {
+
+            document
+            .getElementById(
+                "gameTitle"
+            )
+            .innerText =
+                "🟢 等待其他參賽者加入";
+
+        }
+
+        else if (
+            roomData.roundStatus ===
+            "waiting"
+        ) {
+
+            document
+            .getElementById(
+                "gameTitle"
+            )
+            .innerText =
+                (
+                    roomData.round ||
+                    1
+                ) ===
+                1
+                ? "⏳ 等待房主開始淘汰賽"
+                : "⏳ 等待房主開始本輪";
+
+        }
+
+        else if (
+            roomData.roundStatus ===
+            "playing"
+        ) {
+
+            document
+            .getElementById(
+                "gameTitle"
+            )
+            .innerText =
+                me.ready
+                ? "✅ 你已出拳"
+                : "請選擇你的出拳";
+
+        }
+
+        else if (
+            roomData.roundStatus ===
+            "firstDecision"
+        ) {
+
+            document
+            .getElementById(
+                "gameTitle"
+            )
+            .innerText =
+                "⏳ 等待房主決定下一階段";
+
+        }
+
+        else {
+
+            document
+            .getElementById(
+                "gameTitle"
+            )
+            .innerText =
+                "🏁 本輪已結束";
+
+        }
+
+
+        buttons.forEach(
+            btn => {
+
+                btn.disabled =
+                    roomData.roundStatus !==
+                    "playing" ||
+                    me.ready;
+
+            }
+        );
+
+    }
+
+
+    updateStatus(
+        players
+    );
+
+}
+
+
+// ======================================
+// 人數狀態
+// ======================================
+
+function updateStatus(
+    players
+) {
+
+    const active =
         Object.values(
             players
         )
         .filter(
-            player =>
-                player.status ===
+            p =>
+                p.status ===
                 "active"
         );
 
 
-    const readyPlayers =
-        activePlayers
-        .filter(
-            player =>
-                player.ready
+    if (
+        roomData.stage ===
+        "group" &&
+        roomData.activeGroup
+    ) {
+
+        const current =
+            active.filter(
+                p =>
+                    p.group ===
+                    roomData.activeGroup
+            );
+
+
+        const ready =
+            current.filter(
+                p =>
+                    p.ready
+            );
+
+
+        document
+        .getElementById(
+            "status"
+        )
+        .innerText =
+            groupNames[
+                roomData.activeGroup
+            ] +
+            "：" +
+            ready.length +
+            " / " +
+            current.length +
+            " 已出拳";
+
+
+        return;
+
+    }
+
+
+    const ready =
+        active.filter(
+            p =>
+                p.ready
         );
+
+
+    document
+    .getElementById(
+        "status"
+    )
+    .innerText =
+        "目前 " +
+        active.length +
+        " 位參賽者，" +
+        ready.length +
+        " 位已出拳";
+
+}
+
+
+// ======================================
+// 房主一般按鈕
+// ======================================
+
+function updateHostControls() {
+
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    const start =
+        document.getElementById(
+            "startRoundBtn"
+        );
+
+
+    const end =
+        document.getElementById(
+            "endRoundBtn"
+        );
+
+
+    const next =
+        document.getElementById(
+            "nextRoundBtn"
+        );
+
+
+    start.style.display =
+        "none";
+
+
+    end.style.display =
+        "none";
+
+
+    next.style.display =
+        "none";
+
+
+    if (
+        roomData.stage ===
+        "group"
+    ) {
+
+        return;
+
+    }
+
+
+    if (
+        roomData.joinOpen !==
+        false
+    ) {
+
+        return;
+
+    }
 
 
     if (
         roomData.roundStatus ===
-        "playing"
+        "waiting"
     ) {
 
-        document
-        .getElementById(
-            "status"
-        )
-        .innerText =
-            "本輪已有 " +
-            readyPlayers.length +
-            " / " +
-            activePlayers.length +
-            " 位參賽者出拳";
+        start.style.display =
+            "inline-block";
+
+
+        start.innerText =
+            (
+                roomData.round ||
+                1
+            ) ===
+            1
+            ? "▶️ 開始淘汰賽"
+            : "▶️ 開始本輪";
 
     }
 
-    else {
 
-        document
-        .getElementById(
-            "status"
-        )
-        .innerText =
-            "目前共有 " +
-            activePlayers.length +
-            " 位參賽者";
+    else if (
+        roomData.roundStatus ===
+        "playing"
+    ) {
+
+        end.style.display =
+            "inline-block";
+
+    }
+
+
+    else if (
+        roomData.roundStatus ===
+        "ended"
+    ) {
+
+        next.style.display =
+            "inline-block";
 
     }
 
 }
 
 
-// ==========================================
+// ======================================
+// 結束加入
+// ======================================
+
+window.closeJoining =
+async function() {
+
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    const active =
+        Object.values(
+            roomData.players ||
+            {}
+        )
+        .filter(
+            p =>
+                p.status ===
+                "active"
+        );
+
+
+    if (
+        active.length <
+        2
+    ) {
+
+        alert(
+            "至少需要 2 位參賽者"
+        );
+
+
+        return;
+
+    }
+
+
+    await runTransaction(
+
+        db,
+
+        async transaction => {
+
+
+            const snap =
+                await transaction.get(
+                    roomRef
+                );
+
+
+            transaction.update(
+
+                roomRef,
+
+                {
+
+                    joinOpen:
+                        false
+
+                }
+
+            );
+
+        }
+
+    );
+
+};
+
+
+// ======================================
+// 開始一般輪
+// ======================================
+
+window.startRound =
+async function() {
+
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    await runTransaction(
+
+        db,
+
+        async transaction => {
+
+
+            const snap =
+                await transaction.get(
+                    roomRef
+                );
+
+
+            const data =
+                snap.data();
+
+
+            if (
+                data.joinOpen !==
+                false
+            ) {
+
+                throw new Error(
+                    "請先結束加入"
+                );
+
+            }
+
+
+            transaction.update(
+
+                roomRef,
+
+                {
+
+                    roundStatus:
+                        "playing"
+
+                }
+
+            );
+
+        }
+
+    );
+
+};
+
+
+// ======================================
 // 玩家出拳
-// ==========================================
+// ======================================
 
 window.choose =
 async function(
@@ -1769,35 +1704,18 @@ async function(
             async transaction => {
 
 
-                const snapshot =
+                const snap =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snapshot.data();
-
-
-                if (
-                    data.roundStatus !==
-                    "playing"
-                ) {
-
-                    throw new Error(
-                        "本輪尚未開始"
-                    );
-
-                }
+                    snap.data();
 
 
                 const players = {
-
-                    ...(
-                        data.players ||
-                        {}
-                    )
-
+                    ...(data.players || {})
                 };
 
 
@@ -1816,6 +1734,42 @@ async function(
                     throw new Error(
                         "你目前不能參賽"
                     );
+
+                }
+
+
+                if (
+                    data.stage ===
+                    "group"
+                ) {
+
+                    if (
+                        data.roundStatus !==
+                        "groupPlaying" ||
+                        data.activeGroup !==
+                        me.group
+                    ) {
+
+                        throw new Error(
+                            "目前不是你的組別"
+                        );
+
+                    }
+
+                }
+
+                else {
+
+                    if (
+                        data.roundStatus !==
+                        "playing"
+                    ) {
+
+                        throw new Error(
+                            "本輪尚未開始"
+                        );
+
+                    }
 
                 }
 
@@ -1874,14 +1828,16 @@ async function(
 };
 
 
-// ==========================================
-// 結束本輪
-// ==========================================
+// ======================================
+// 結束一般輪
+// ======================================
 
 window.endRound =
 async function() {
 
-    if (!isHost) {
+    if (
+        !isHost
+    ) {
 
         return;
 
@@ -1897,39 +1853,22 @@ async function() {
             async transaction => {
 
 
-                const snapshot =
+                const snap =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snapshot.data();
-
-
-                if (
-                    data.roundStatus !==
-                    "playing"
-                ) {
-
-                    throw new Error(
-                        "本輪尚未開始"
-                    );
-
-                }
+                    snap.data();
 
 
                 const players = {
-
-                    ...(
-                        data.players ||
-                        {}
-                    )
-
+                    ...(data.players || {})
                 };
 
 
-                const participants =
+                const activeEntries =
                     Object.entries(
                         players
                     )
@@ -1937,125 +1876,134 @@ async function() {
                         (
                             [
                                 id,
-                                player
+                                p
                             ]
                         ) =>
-                            player.status ===
-                            "active" &&
-                            player.ready
+                            p.status ===
+                            "active"
+                    );
+
+
+                const ready =
+                    activeEntries
+                    .filter(
+                        (
+                            [
+                                id,
+                                p
+                            ]
+                        ) =>
+                            p.ready
                     );
 
 
                 if (
-                    participants.length <
+                    ready.length <
                     2
                 ) {
 
                     throw new Error(
-                        "至少需要 2 位參賽者出拳"
+                        "至少需要 2 位玩家出拳"
                     );
 
                 }
 
 
-                const choices =
-                    [
-                        ...new Set(
+                // 沒出拳者在截止時淘汰
+                activeEntries.forEach(
 
-                            participants
-                            .map(
-                                (
-                                    [
-                                        id,
-                                        player
-                                    ]
-                                ) =>
-                                    player.choice
-                            )
+                    (
+                        [
+                            id,
+                            p
+                        ]
+                    ) => {
 
-                        )
-                    ];
+                        if (
+                            !p.ready
+                        ) {
+
+                            players[
+                                id
+                            ] = {
+
+                                ...p,
+
+                                status:
+                                    "spectator",
+
+                                eliminatedReason:
+                                    "未出拳"
+
+                            };
+
+                        }
+
+                    }
+
+                );
 
 
-                // 兩種拳才會產生輸贏
+                // 第一輪先交給房主選擇是否分組
                 if (
-                    choices.length ===
-                    2
+                    (
+                        data.round ||
+                        1
+                    ) ===
+                    1 &&
+                    !data.firstRoundDecision
                 ) {
 
-                    let winningChoice;
+                    ready.forEach(
 
-
-                    if (
-                        choices.includes(
-                            "rock"
-                        ) &&
-                        choices.includes(
-                            "scissors"
-                        )
-                    ) {
-
-                        winningChoice =
-                            "rock";
-
-                    }
-
-
-                    else if (
-                        choices.includes(
-                            "scissors"
-                        ) &&
-                        choices.includes(
-                            "paper"
-                        )
-                    ) {
-
-                        winningChoice =
-                            "scissors";
-
-                    }
-
-
-                    else {
-
-                        winningChoice =
-                            "paper";
-
-                    }
-
-
-                    participants
-                    .forEach(
                         (
                             [
                                 id,
-                                player
+                                p
                             ]
                         ) => {
 
+                            players[
+                                id
+                            ] = {
 
-                            if (
-                                player.choice !==
-                                winningChoice
-                            ) {
+                                ...players[id],
 
-                                players[
-                                    id
-                                ] = {
+                                group:
+                                    p.choice
 
-                                    ...player,
-
-                                    status:
-                                        "spectator"
-
-                                };
-
-                            }
+                            };
 
                         }
+
                     );
 
+
+                    transaction.update(
+
+                        roomRef,
+
+                        {
+
+                            players:
+                                players,
+
+                            roundStatus:
+                                "firstDecision"
+
+                        }
+
+                    );
+
+
+                    return;
+
                 }
+
+
+                applyNormalElimination(
+                    players
+                );
 
 
                 transaction.update(
@@ -2091,73 +2039,87 @@ async function() {
 };
 
 
-// ==========================================
-// 顯示本輪結果
-// ==========================================
+// ======================================
+// 一般淘汰判定
+// ======================================
 
-function showRoundResult(
+function applyNormalElimination(
     players
 ) {
 
-    const emoji = {
+    const participants =
+        Object.entries(
+            players
+        )
+        .filter(
+            (
+                [
+                    id,
+                    p
+                ]
+            ) =>
+                p.status ===
+                "active" &&
+                p.ready
+        );
 
-        rock:
-            "✊ 石頭",
 
-        scissors:
-            "✌️ 剪刀",
+    const choices =
+        [
+            ...new Set(
+                participants.map(
+                    (
+                        [
+                            id,
+                            p
+                        ]
+                    ) =>
+                        p.choice
+                )
+            )
+        ];
 
-        paper:
-            "🖐️ 布"
 
-    };
+    if (
+        choices.length !==
+        2
+    ) {
+
+        return;
+
+    }
 
 
-    let html =
-        "<h3>🎊 本輪結果</h3>";
+    const winner =
+        getWinningChoice(
+            choices
+        );
 
 
-    Object.values(
-        players
-    )
-    .forEach(
-        player => {
+    participants.forEach(
 
+        (
+            [
+                id,
+                p
+            ]
+        ) => {
 
             if (
-                player.choice
+                p.choice !==
+                winner
             ) {
 
-                html +=
-                    escapeHtml(
-                        player.nickname
-                    ) +
-                    "：" +
-                    emoji[
-                        player.choice
-                    ];
+                players[
+                    id
+                ] = {
 
+                    ...p,
 
-                if (
-                    player.status ===
-                    "spectator"
-                ) {
+                    status:
+                        "spectator"
 
-                    html +=
-                        "　❌ 淘汰";
-
-                }
-
-                else {
-
-                    html +=
-                        "　✅ 晉級";
-
-                }
-
-
-                html +=
-                    "<br>";
+                };
 
             }
 
@@ -2165,25 +2127,800 @@ function showRoundResult(
 
     );
 
+}
+
+
+// ======================================
+// 第一輪分組摘要
+// ======================================
+
+function updateGroupDecision(
+    players
+) {
+
+    const area =
+        document
+        .getElementById(
+            "groupDecisionArea"
+        );
+
+
+    if (
+        !isHost ||
+        roomData.roundStatus !==
+        "firstDecision"
+    ) {
+
+        area.style.display =
+            "none";
+
+
+        return;
+
+    }
+
+
+    area.style.display =
+        "block";
+
+
+    const counts = {
+
+        rock:
+            0,
+
+        scissors:
+            0,
+
+        paper:
+            0
+
+    };
+
+
+    Object.values(
+        players
+    )
+    .filter(
+        p =>
+            p.status ===
+            "active"
+    )
+    .forEach(
+        p => {
+
+            if (
+                p.group
+            ) {
+
+                counts[
+                    p.group
+                ]++;
+
+            }
+
+        }
+    );
+
 
     document
     .getElementById(
-        "result"
+        "firstRoundGroupSummary"
     )
     .innerHTML =
-        html;
+
+        "<p>✊ 石頭組：" +
+        counts.rock +
+        " 人</p>" +
+
+        "<p>✌️ 剪刀組：" +
+        counts.scissors +
+        " 人</p>" +
+
+        "<p>🖐️ 布組：" +
+        counts.paper +
+        " 人</p>";
 
 }
 
 
-// ==========================================
-// 準備下一輪
-// ==========================================
+// ======================================
+// 不分組
+// ======================================
 
-window.prepareNextRound =
+window.continueWithoutGroups =
 async function() {
 
-    if (!isHost) {
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    await runTransaction(
+
+        db,
+
+        async transaction => {
+
+
+            const snap =
+                await transaction.get(
+                    roomRef
+                );
+
+
+            const data =
+                snap.data();
+
+
+            const players = {
+                ...(data.players || {})
+            };
+
+
+            applyNormalElimination(
+                players
+            );
+
+
+            transaction.update(
+
+                roomRef,
+
+                {
+
+                    players:
+                        players,
+
+                    firstRoundDecision:
+                        true,
+
+                    groupMode:
+                        false,
+
+                    stage:
+                        "normal",
+
+                    roundStatus:
+                        "ended"
+
+                }
+
+            );
+
+        }
+
+    );
+
+};
+
+
+// ======================================
+// 開啟分組模式
+// ======================================
+
+window.enableGroupMode =
+async function() {
+
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    await runTransaction(
+
+        db,
+
+        async transaction => {
+
+
+            const snap =
+                await transaction.get(
+                    roomRef
+                );
+
+
+            const data =
+                snap.data();
+
+
+            const players = {
+                ...(data.players || {})
+            };
+
+
+            const statuses = {};
+
+
+            [
+                "rock",
+                "scissors",
+                "paper"
+            ]
+            .forEach(
+                group => {
+
+
+                    const members =
+                        Object.values(
+                            players
+                        )
+                        .filter(
+                            p =>
+                                p.status ===
+                                "active" &&
+                                p.group ===
+                                group
+                        );
+
+
+                    if (
+                        members.length ===
+                        0
+                    ) {
+
+                        statuses[
+                            group
+                        ] =
+                            "empty";
+
+                    }
+
+                    else if (
+                        members.length ===
+                        1
+                    ) {
+
+                        statuses[
+                            group
+                        ] =
+                            "completed";
+
+                    }
+
+                    else {
+
+                        statuses[
+                            group
+                        ] =
+                            "waiting";
+
+                    }
+
+                }
+            );
+
+
+            // 清空第一輪拳，準備分組重猜
+            Object.keys(
+                players
+            )
+            .forEach(
+                id => {
+
+                    if (
+                        players[id].status ===
+                        "active"
+                    ) {
+
+                        players[
+                            id
+                        ] = {
+
+                            ...players[id],
+
+                            choice:
+                                null,
+
+                            ready:
+                                false
+
+                        };
+
+                    }
+
+                }
+            );
+
+
+            transaction.update(
+
+                roomRef,
+
+                {
+
+                    players:
+                        players,
+
+                    firstRoundDecision:
+                        true,
+
+                    groupMode:
+                        true,
+
+                    stage:
+                        "group",
+
+                    activeGroup:
+                        null,
+
+                    groupStatuses:
+                        statuses,
+
+                    roundStatus:
+                        "groupWaiting"
+
+                }
+
+            );
+
+        }
+
+    );
+
+};
+
+
+// ======================================
+// 分組控制畫面
+// ======================================
+
+function updateGroupControl(
+    players
+) {
+
+    const area =
+        document
+        .getElementById(
+            "groupControlArea"
+        );
+
+
+    if (
+        roomData.stage !==
+        "group"
+    ) {
+
+        area.style.display =
+            "none";
+
+
+        return;
+
+    }
+
+
+    area.style.display =
+        isHost
+        ? "block"
+        : "none";
+
+
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    const list =
+        document
+        .getElementById(
+            "groupList"
+        );
+
+
+    list.innerHTML =
+        "";
+
+
+    const statuses =
+        roomData.groupStatuses ||
+        {};
+
+
+    [
+        "rock",
+        "scissors",
+        "paper"
+    ]
+    .forEach(
+        group => {
+
+
+            const members =
+                Object.values(
+                    players
+                )
+                .filter(
+                    p =>
+                        p.status ===
+                        "active" &&
+                        p.group ===
+                        group
+                );
+
+
+            const box =
+                document
+                .createElement(
+                    "div"
+                );
+
+
+            box.className =
+                "group-box";
+
+
+            const title =
+                document
+                .createElement(
+                    "div"
+                );
+
+
+            title.className =
+                "group-title";
+
+
+            title.innerText =
+                groupNames[
+                    group
+                ] +
+                "　" +
+                members.length +
+                " 人";
+
+
+            box.appendChild(
+                title
+            );
+
+
+            const status =
+                statuses[
+                    group
+                ] ||
+                "empty";
+
+
+            const text =
+                document
+                .createElement(
+                    "div"
+                );
+
+
+            text.className =
+                "group-status";
+
+
+            if (
+                status ===
+                "empty"
+            ) {
+
+                text.innerText =
+                    "無參賽者";
+
+            }
+
+            else if (
+                status ===
+                "completed"
+            ) {
+
+                text.innerText =
+                    members.length ===
+                    1
+                    ? "✅ 1 人，自動晉級"
+                    : "✅ 本組已完成";
+
+            }
+
+            else if (
+                status ===
+                "playing"
+            ) {
+
+                text.innerText =
+                    "🔥 本組比賽中";
+
+            }
+
+            else if (
+                status ===
+                "replay"
+            ) {
+
+                text.innerText =
+                    "🤝 本組平手，需要重賽";
+
+            }
+
+            else {
+
+                text.innerText =
+                    "⏳ 等待房主安排";
+
+            }
+
+
+            box.appendChild(
+                text
+            );
+
+
+            if (
+                (
+                    status ===
+                    "waiting" ||
+                    status ===
+                    "replay"
+                ) &&
+                !roomData.activeGroup
+            ) {
+
+                const button =
+                    document
+                    .createElement(
+                        "button"
+                    );
+
+
+                button.className =
+                    "group-btn";
+
+
+                button.innerText =
+                    status ===
+                    "replay"
+                    ? "🔁 本組重賽"
+                    : "▶️ 讓這組先比";
+
+
+                button.onclick =
+                    () =>
+                        startGroup(
+                            group
+                        );
+
+
+                box.appendChild(
+                    button
+                );
+
+            }
+
+
+            if (
+                status ===
+                "playing" &&
+                roomData.activeGroup ===
+                group
+            ) {
+
+                const button =
+                    document
+                    .createElement(
+                        "button"
+                    );
+
+
+                button.className =
+                    "end-round-btn";
+
+
+                button.innerText =
+                    "🛑 結束本組比賽";
+
+
+                button.onclick =
+                    () =>
+                        endGroup(
+                            group
+                        );
+
+
+                box.appendChild(
+                    button
+                );
+
+            }
+
+
+            list.appendChild(
+                box
+            );
+
+        }
+    );
+
+
+    const allDone =
+        [
+            "rock",
+            "scissors",
+            "paper"
+        ]
+        .every(
+            group => {
+
+                const status =
+                    statuses[
+                        group
+                    ];
+
+
+                return (
+                    status ===
+                    "completed" ||
+                    status ===
+                    "empty"
+                );
+
+            }
+        );
+
+
+    document
+    .getElementById(
+        "finishGroupsBtn"
+    )
+    .style.display =
+        allDone
+        ? "inline-block"
+        : "none";
+
+}
+
+
+// ======================================
+// 開始指定組
+// ======================================
+
+window.startGroup =
+async function(
+    group
+) {
+
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    await runTransaction(
+
+        db,
+
+        async transaction => {
+
+
+            const snap =
+                await transaction.get(
+                    roomRef
+                );
+
+
+            const data =
+                snap.data();
+
+
+            if (
+                data.activeGroup
+            ) {
+
+                throw new Error(
+                    "目前已有組別正在比賽"
+                );
+
+            }
+
+
+            const players = {
+                ...(data.players || {})
+            };
+
+
+            const statuses = {
+                ...(data.groupStatuses || {})
+            };
+
+
+            Object.keys(
+                players
+            )
+            .forEach(
+                id => {
+
+                    if (
+                        players[id].status ===
+                        "active" &&
+                        players[id].group ===
+                        group
+                    ) {
+
+                        players[
+                            id
+                        ] = {
+
+                            ...players[id],
+
+                            choice:
+                                null,
+
+                            ready:
+                                false
+
+                        };
+
+                    }
+
+                }
+            );
+
+
+            statuses[
+                group
+            ] =
+                "playing";
+
+
+            transaction.update(
+
+                roomRef,
+
+                {
+
+                    players:
+                        players,
+
+                    activeGroup:
+                        group,
+
+                    groupStatuses:
+                        statuses,
+
+                    roundStatus:
+                        "groupPlaying"
+
+                }
+
+            );
+
+        }
+
+    );
+
+};
+
+
+// ======================================
+// 結束指定組
+// ======================================
+
+window.endGroup =
+async function(
+    group
+) {
+
+    if (
+        !isHost
+    ) {
 
         return;
 
@@ -2199,64 +2936,231 @@ async function() {
             async transaction => {
 
 
-                const snapshot =
+                const snap =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snapshot.data();
+                    snap.data();
+
+
+                const players = {
+                    ...(data.players || {})
+                };
+
+
+                const statuses = {
+                    ...(data.groupStatuses || {})
+                };
+
+
+                const members =
+                    Object.entries(
+                        players
+                    )
+                    .filter(
+                        (
+                            [
+                                id,
+                                p
+                            ]
+                        ) =>
+                            p.status ===
+                            "active" &&
+                            p.group ===
+                            group
+                    );
+
+
+                const ready =
+                    members.filter(
+                        (
+                            [
+                                id,
+                                p
+                            ]
+                        ) =>
+                            p.ready
+                    );
 
 
                 if (
-                    data.roundStatus !==
-                    "ended"
+                    ready.length <
+                    2
                 ) {
 
                     throw new Error(
-                        "本輪尚未結束"
+                        "至少需要 2 位玩家出拳"
                     );
 
                 }
 
 
-                const players = {
+                // 未出拳者淘汰
+                members.forEach(
 
-                    ...(
-                        data.players ||
-                        {}
-                    )
+                    (
+                        [
+                            id,
+                            p
+                        ]
+                    ) => {
 
-                };
+                        if (
+                            !p.ready
+                        ) {
 
-
-                Object.keys(
-                    players
-                )
-                .forEach(
-                    id => {
-
-
-                        players[
-                            id
-                        ] = {
-
-                            ...players[
+                            players[
                                 id
-                            ],
+                            ] = {
 
-                            choice:
-                                null,
+                                ...p,
 
-                            ready:
-                                false
+                                status:
+                                    "spectator",
 
-                        };
+                                eliminatedReason:
+                                    "未出拳"
+
+                            };
+
+                        }
 
                     }
 
                 );
+
+
+                const choices =
+                    [
+                        ...new Set(
+                            ready.map(
+                                (
+                                    [
+                                        id,
+                                        p
+                                    ]
+                                ) =>
+                                    p.choice
+                            )
+                        )
+                    ];
+
+
+                // 同拳或三種都有 = 平手重賽
+                if (
+                    choices.length ===
+                    1 ||
+                    choices.length ===
+                    3
+                ) {
+
+                    ready.forEach(
+
+                        (
+                            [
+                                id,
+                                p
+                            ]
+                        ) => {
+
+                            players[
+                                id
+                            ] = {
+
+                                ...players[id],
+
+                                choice:
+                                    null,
+
+                                ready:
+                                    false
+
+                            };
+
+                        }
+
+                    );
+
+
+                    statuses[
+                        group
+                    ] =
+                        "replay";
+
+
+                    transaction.update(
+
+                        roomRef,
+
+                        {
+
+                            players:
+                                players,
+
+                            activeGroup:
+                                null,
+
+                            groupStatuses:
+                                statuses,
+
+                            roundStatus:
+                                "groupWaiting"
+
+                        }
+
+                    );
+
+
+                    return;
+
+                }
+
+
+                const winner =
+                    getWinningChoice(
+                        choices
+                    );
+
+
+                ready.forEach(
+
+                    (
+                        [
+                            id,
+                            p
+                        ]
+                    ) => {
+
+                        if (
+                            p.choice !==
+                            winner
+                        ) {
+
+                            players[
+                                id
+                            ] = {
+
+                                ...p,
+
+                                status:
+                                    "spectator"
+
+                            };
+
+                        }
+
+                    }
+
+                );
+
+
+                statuses[
+                    group
+                ] =
+                    "completed";
 
 
                 transaction.update(
@@ -2268,14 +3172,14 @@ async function() {
                         players:
                             players,
 
-                        round:
-                            (
-                                data.round ||
-                                1
-                            ) + 1,
+                        activeGroup:
+                            null,
+
+                        groupStatuses:
+                            statuses,
 
                         roundStatus:
-                            "waiting"
+                            "groupWaiting"
 
                     }
 
@@ -2298,11 +3202,260 @@ async function() {
 };
 
 
-// ==========================================
-// 最終冠軍
-// ==========================================
+// ======================================
+// 分組全部完成
+// ======================================
 
-function checkFinalWinner(
+window.finishGroupStage =
+async function() {
+
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    await runTransaction(
+
+        db,
+
+        async transaction => {
+
+
+            const snap =
+                await transaction.get(
+                    roomRef
+                );
+
+
+            const data =
+                snap.data();
+
+
+            const players = {
+                ...(data.players || {})
+            };
+
+
+            Object.keys(
+                players
+            )
+            .forEach(
+                id => {
+
+                    if (
+                        players[id].status ===
+                        "active"
+                    ) {
+
+                        players[
+                            id
+                        ] = {
+
+                            ...players[id],
+
+                            group:
+                                null,
+
+                            choice:
+                                null,
+
+                            ready:
+                                false
+
+                        };
+
+                    }
+
+                }
+            );
+
+
+            transaction.update(
+
+                roomRef,
+
+                {
+
+                    players:
+                        players,
+
+                    groupMode:
+                        false,
+
+                    stage:
+                        "normal",
+
+                    activeGroup:
+                        null,
+
+                    groupStatuses:
+                        {},
+
+                    round:
+                        2,
+
+                    roundStatus:
+                        "waiting"
+
+                }
+
+            );
+
+        }
+
+    );
+
+};
+
+
+// ======================================
+// 準備一般下一輪
+// ======================================
+
+window.prepareNextRound =
+async function() {
+
+    if (
+        !isHost
+    ) {
+
+        return;
+
+    }
+
+
+    await runTransaction(
+
+        db,
+
+        async transaction => {
+
+
+            const snap =
+                await transaction.get(
+                    roomRef
+                );
+
+
+            const data =
+                snap.data();
+
+
+            const players = {
+                ...(data.players || {})
+            };
+
+
+            Object.keys(
+                players
+            )
+            .forEach(
+                id => {
+
+                    if (
+                        players[id].status ===
+                        "active"
+                    ) {
+
+                        players[
+                            id
+                        ] = {
+
+                            ...players[id],
+
+                            choice:
+                                null,
+
+                            ready:
+                                false
+
+                        };
+
+                    }
+
+                }
+            );
+
+
+            transaction.update(
+
+                roomRef,
+
+                {
+
+                    players:
+                        players,
+
+                    round:
+                        (
+                            data.round ||
+                            1
+                        ) + 1,
+
+                    roundStatus:
+                        "waiting"
+
+                }
+
+            );
+
+        }
+
+    );
+
+};
+
+
+// ======================================
+// 勝負拳
+// ======================================
+
+function getWinningChoice(
+    choices
+) {
+
+    if (
+        choices.includes(
+            "rock"
+        ) &&
+        choices.includes(
+            "scissors"
+        )
+    ) {
+
+        return "rock";
+
+    }
+
+
+    if (
+        choices.includes(
+            "scissors"
+        ) &&
+        choices.includes(
+            "paper"
+        )
+    ) {
+
+        return "scissors";
+
+    }
+
+
+    return "paper";
+
+}
+
+
+// ======================================
+// 冠軍
+// ======================================
+
+function checkWinner(
     players
 ) {
 
@@ -2311,26 +3464,35 @@ function checkFinalWinner(
             players
         )
         .filter(
-            player =>
-                player.status ===
+            p =>
+                p.status ===
                 "active"
+        );
+
+
+    const total =
+        Object.keys(
+            players
+        ).length;
+
+
+    const winnerArea =
+        document
+        .getElementById(
+            "winnerArea"
         );
 
 
     if (
         active.length ===
         1 &&
-        Object.keys(
-            players
-        ).length >
-        1
+        total >
+        1 &&
+        roomData.stage !==
+        "group"
     ) {
 
-        document
-        .getElementById(
-            "winnerArea"
-        )
-        .style.display =
+        winnerArea.style.display =
             "block";
 
 
@@ -2340,61 +3502,14 @@ function checkFinalWinner(
         )
         .innerText =
             "🏆 " +
-            active[
-                0
-            ].nickname +
+            active[0].nickname +
             " 獲勝！";
-
-
-        document
-        .querySelectorAll(
-            ".choice"
-        )
-        .forEach(
-            button =>
-                button.disabled =
-                    true
-        );
-
-
-        if (
-            isHost
-        ) {
-
-            document
-            .getElementById(
-                "startRoundBtn"
-            )
-            .style.display =
-                "none";
-
-
-            document
-            .getElementById(
-                "endRoundBtn"
-            )
-            .style.display =
-                "none";
-
-
-            document
-            .getElementById(
-                "nextRoundBtn"
-            )
-            .style.display =
-                "none";
-
-        }
 
     }
 
     else {
 
-        document
-        .getElementById(
-            "winnerArea"
-        )
-        .style.display =
+        winnerArea.style.display =
             "none";
 
     }
@@ -2402,9 +3517,9 @@ function checkFinalWinner(
 }
 
 
-// ==========================================
-// 分享邀請
-// ==========================================
+// ======================================
+// 分享
+// ======================================
 
 window.copyInviteLink =
 async function() {
@@ -2444,9 +3559,9 @@ async function() {
 };
 
 
-// =====================================================
-// 💬 討論區
-// =====================================================
+// ======================================
+// 討論區
+// ======================================
 
 const chatRef =
     collection(
@@ -2459,24 +3574,16 @@ const chatRef =
 
 const chatQuery =
     query(
-
         chatRef,
-
         orderBy(
             "createdAt",
             "desc"
         ),
-
         limit(
             50
         )
-
     );
 
-
-// ==========================================
-// 即時取得最近 50 則
-// ==========================================
 
 onSnapshot(
 
@@ -2485,37 +3592,26 @@ onSnapshot(
     snapshot => {
 
 
-        const messages = [];
+        const messages =
+            [];
 
 
-        snapshot
-        .forEach(
-            messageDoc => {
+        snapshot.forEach(
+            item => {
 
                 messages.push(
-                    messageDoc.data()
+                    item.data()
                 );
 
             }
         );
 
 
-        // 因為資料庫抓最新到最舊，
-        // 顯示時反過來變成舊到新
         messages.reverse();
 
 
-        renderMessages(
+        renderChat(
             messages
-        );
-
-    },
-
-    error => {
-
-        console.error(
-            "聊天監聽失敗",
-            error
         );
 
     }
@@ -2523,11 +3619,11 @@ onSnapshot(
 );
 
 
-// ==========================================
-// 顯示訊息
-// ==========================================
+// ======================================
+// 顯示聊天
+// ======================================
 
-function renderMessages(
+function renderChat(
     messages
 ) {
 
@@ -2548,7 +3644,7 @@ function renderMessages(
     ) {
 
         box.innerHTML =
-            "<div class='hint' style='text-align:center;'>尚無訊息</div>";
+            "<div class='hint'>尚無訊息</div>";
 
 
         return;
@@ -2556,8 +3652,7 @@ function renderMessages(
     }
 
 
-    messages
-    .forEach(
+    messages.forEach(
         message => {
 
 
@@ -2583,27 +3678,18 @@ function renderMessages(
                 "chat-name";
 
 
-            if (
+            name.innerText =
                 message.role ===
                 "host"
-            ) {
-
-                name.innerText =
-                    "👑 " +
-                    (
-                        message.nickname ||
-                        "房主"
-                    );
-
-            }
-
-            else {
-
-                name.innerText =
+                ? "👑 " +
+                  (
                     message.nickname ||
-                    "匿名玩家";
-
-            }
+                    "房主"
+                  )
+                : (
+                    message.nickname ||
+                    "匿名玩家"
+                  );
 
 
             const text =
@@ -2622,25 +3708,21 @@ function renderMessages(
                 "";
 
 
-            wrapper
-            .appendChild(
+            wrapper.appendChild(
                 name
             );
 
 
-            wrapper
-            .appendChild(
+            wrapper.appendChild(
                 text
             );
 
 
-            box
-            .appendChild(
+            box.appendChild(
                 wrapper
             );
 
         }
-
     );
 
 
@@ -2650,9 +3732,9 @@ function renderMessages(
 }
 
 
-// ==========================================
-// 送出訊息
-// ==========================================
+// ======================================
+// 發送聊天
+// ======================================
 
 window.sendMessage =
 async function() {
@@ -2669,92 +3751,62 @@ async function() {
         .trim();
 
 
-    if (!text) {
-
-        return;
-
-    }
-
-
     if (
-        text.length >
-        100
+        !text
     ) {
 
-        alert(
-            "訊息最多 100 個字"
-        );
-
-
         return;
 
     }
 
 
-    try {
+    await addDoc(
 
-        await addDoc(
+        chatRef,
 
-            chatRef,
+        {
 
-            {
+            playerId:
+                playerId,
 
-                playerId:
-                    playerId,
+            nickname:
+                nickname,
 
-                nickname:
-                    nickname,
+            role:
+                isHost
+                ? "host"
+                : "player",
 
-                role:
-                    isHost
-                    ? "host"
-                    : "player",
+            text:
+                text,
 
-                text:
-                    text,
+            createdAt:
+                serverTimestamp()
 
-                createdAt:
-                    serverTimestamp()
+        }
 
-            }
-
-        );
+    );
 
 
-        input.value =
-            "";
+    input.value =
+        "";
 
 
-        updateChatCount();
-
-    }
-
-    catch(error) {
-
-        console.error(
-            error
-        );
-
-
-        alert(
-            "訊息送出失敗：" +
-            error.message
-        );
-
-    }
+    updateChatCount();
 
 };
 
 
-// ==========================================
-// Enter 送訊息
-// ==========================================
+// ======================================
+// Enter 發送
+// ======================================
 
 document
 .getElementById(
     "chatInput"
 )
 .addEventListener(
+
     "keydown",
 
     event => {
@@ -2767,18 +3819,18 @@ document
             event.preventDefault();
 
 
-            window
-            .sendMessage();
+            window.sendMessage();
 
         }
 
     }
+
 );
 
 
-// ==========================================
-// 字數顯示
-// ==========================================
+// ======================================
+// 字數
+// ======================================
 
 function updateChatCount() {
 
@@ -2808,30 +3860,6 @@ document
     "input",
     updateChatCount
 );
-
-
-// ==========================================
-// 防 HTML
-// ==========================================
-
-function escapeHtml(
-    text
-) {
-
-    const div =
-        document
-        .createElement(
-            "div"
-        );
-
-
-    div.textContent =
-        text;
-
-
-    return div.innerHTML;
-
-}
 
 </script>
 

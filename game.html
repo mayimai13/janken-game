@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>匿名猜拳淘汰賽</title>
+
+
+<style>
+
+body {
+    margin: 0;
+    font-family: Arial, "Microsoft JhengHei", sans-serif;
+    background: #f5f5f5;
+    text-align: center;
+    color: #222;
+}
+
+.container {
+    max-width: 560px;
+    margin: auto;
+    padding: 25px 18px 60px;
+}
+
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    margin-top: 18px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.10);
+}
+
+h1 {
+    margin-bottom: 5px;
+}
+
+.room-number {
+    font-size: 32px;
+    font-weight: bold;
+    letter-spacing: 5px;
+    margin: 8px;
+}
+
+.round {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+button {
+    border: none;
+    border-radius: 12px;
+    padding: 13px 20px;
+    margin: 7px;
+    font-size: 17px;
+    cursor: pointer;
+    color: white;
+}
+
+.share-btn {
+    background: #1687ff;
+}
+
+.end-round-btn {
+    background: #e53935;
+}
+
+.next-btn {
+    background: #06c755;
+}
+
+.choice-area {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.choice {
+    width: 95px;
+    height: 115px;
+    background: white;
+    color: #222;
+    font-size: 48px;
+    box-shadow: 0 3px 12px rgba(0,0,0,.15);
+}
+
+.choice:disabled {
+    opacity: .3;
+    cursor: not-allowed;
+}
+
+.player-list {
+    text-align: left;
+}
+
+.player {
+    padding: 12px 5px;
+    border-bottom: 1px solid #eee;
+    font-size: 16px;
+}
+
+.active {
+    font-weight: bold;
+}
+
+.spectator {
+    color: #999;
+}
+
+#status {
+    color: #666;
+    margin-top: 15px;
+}
+
+#result {
+    font-size: 19px;
+    line-height: 1.8;
+    margin-top: 20px;
+}
+
+#hostControls {
+    display: none;
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid #eee;
+}
+
+#nextRoundBtn {
+    display: none;
+}
+
+#spectatorMessage {
+    display: none;
+    padding: 18px;
+    margin-top: 15px;
+    background: #fafafa;
+    border-radius: 12px;
+    color: #777;
+}
+
+#winnerArea {
+    display: none;
+}
+
+.winner {
+    font-size: 30px;
+    font-weight: bold;
+    margin: 20px;
+}
+
+.hint {
+    font-size: 14px;
+    color: #888;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+
+<h1>🎮 匿名猜拳淘汰賽</h1>
+
+
+<div class="card">
+
+    <div>
+        房間號碼
+    </div>
+
+    <div
+        id="roomNumber"
+        class="room-number">
+    </div>
+
+    <div
+        id="roundNumber"
+        class="round">
+    </div>
+
+    <button
+        class="share-btn"
+        onclick="copyInviteLink()">
+        📋 複製邀請連結
+    </button>
+
+    <div id="copyMessage"></div>
+
+</div>
+
+
+<!-- 玩家 -->
+
+<div class="card">
+
+    <h2>👥 玩家</h2>
+
+    <div
+        id="playerList"
+        class="player-list">
+    </div>
+
+    <div id="status">
+        等待玩家...
+    </div>
+
+</div>
+
+
+<!-- 出拳 -->
+
+<div
+    id="gameArea"
+    class="card">
+
+    <h2>請選擇你的出拳</h2>
+
+
+    <div class="choice-area">
+
+        <button
+            class="choice"
+            onclick="choose('rock')">
+            ✊
+        </button>
+
+        <button
+            class="choice"
+            onclick="choose('scissors')">
+            ✌️
+        </button>
+
+        <button
+            class="choice"
+            onclick="choose('paper')">
+            🖐️
+        </button>
+
+    </div>
+
+
+    <div id="spectatorMessage">
+
+        👀 你已被淘汰
+
+        <br><br>
+
+        現在進入觀看模式
+
+    </div>
+
+
+    <div id="result"></div>
+
+
+    <!-- 房主 -->
+
+    <div id="hostControls">
+
+        <div class="hint">
+            👑 房主控制
+        </div>
+
+
+        <button
+            id="endRoundBtn"
+            class="end-round-btn"
+            onclick="endRound()">
+
+            🛑 結束本輪
+
+        </button>
+
+
+        <button
+            id="nextRoundBtn"
+            class="next-btn"
+            onclick="nextRound()">
+
+            🔄 開始下一輪
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- 最終勝者 -->
+
+<div
+    id="winnerArea"
+    class="card">
+
+    <h2>🎉 比賽結束</h2>
+
+    <div
+        id="finalWinner"
+        class="winner">
+    </div>
+
+</div>
+
+
+</div>
+
+
+<script type="module">
+
+
+import {
+    initializeApp
+}
+from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+
+
+import {
+
+    getFirestore,
+    doc,
+    getDoc,
+    onSnapshot,
+    runTransaction
+
+}
+from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+
+// ==========================================
+// Firebase
+// ==========================================
+
+const firebaseConfig = {
+
+    apiKey:
+    "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
+
+    authDomain:
+    "janken-game-69aa6.firebaseapp.com",
+
+    projectId:
+    "janken-game-69aa6",
+
+    storageBucket:
+    "janken-game-69aa6.firebasestorage.app",
+
+    messagingSenderId:
+    "676529713314",
+
+    appId:
+    "1:676529713314:web:3e127ae463d68a250a27fb",
+
+    measurementId:
+    "G-BK85KK19FG"
+};
+
+
+const app =
+    initializeApp(
+        firebaseConfig
+    );
+
+
+const db =
+    getFirestore(
+        app
+    );
+
+
+// ==========================================
+// 玩家資料
+// ==========================================
+
+const playerId =
+    sessionStorage.getItem(
+        "jankenPlayerId"
+    );
+
+
+const nickname =
+    sessionStorage.getItem(
+        "jankenNickname"
+    );
+
+
+const params =
+    new URLSearchParams(
+        window.location.search
+    );
+
+
+const roomCode =
+    params.get("room");
+
+
+if (
+    !playerId ||
+    !nickname ||
+    !roomCode
+) {
+
+    alert(
+        "玩家資料不存在，請重新加入遊戲"
+    );
+
+    window.location.href =
+        "index.html";
+}
+
+
+const roomRef =
+    doc(
+        db,
+        "rooms",
+        roomCode
+    );
+
+
+let roomData =
+    null;
+
+
+let isHost =
+    false;
+
+
+// ==========================================
+// 房號
+// ==========================================
+
+document
+.getElementById(
+    "roomNumber"
+)
+.innerText =
+    roomCode;
+
+
+// ==========================================
+// 即時監聽
+// ==========================================
+
+onSnapshot(
+
+    roomRef,
+
+    snapshot => {
+
+        if (
+            !snapshot.exists()
+        ) {
+
+            return;
+        }
+
+
+        roomData =
+            snapshot.data();
+
+
+        isHost =
+            roomData.hostId ===
+            playerId;
+
+
+        const players =
+            roomData.players ||
+            {};
+
+
+        renderPlayers(
+            players
+        );
+
+
+        updateGame(
+            players
+        );
+
+
+        document
+        .getElementById(
+            "roundNumber"
+        )
+        .innerText =
+            "第 " +
+            (
+                roomData.round ||
+                1
+            ) +
+            " 輪";
+
+
+        document
+        .getElementById(
+            "hostControls"
+        )
+        .style.display =
+            isHost
+            ? "block"
+            : "none";
+
+
+        if (
+            roomData.roundStatus ===
+            "ended"
+        ) {
+
+            showRoundResult(
+                players
+            );
+
+        }
+
+        else {
+
+            document
+            .getElementById(
+                "result"
+            )
+            .innerHTML =
+                "";
+
+
+            if (
+                isHost
+            ) {
+
+                document
+                .getElementById(
+                    "endRoundBtn"
+                )
+                .style.display =
+                    "inline-block";
+
+
+                document
+                .getElementById(
+                    "nextRoundBtn"
+                )
+                .style.display =
+                    "none";
+
+            }
+
+        }
+
+
+        checkFinalWinner(
+            players
+        );
+
+    }
+
+);
+
+
+// ==========================================
+// 玩家列表
+// ==========================================
+
+function renderPlayers(
+    players
+) {
+
+    const list =
+        document
+        .getElementById(
+            "playerList"
+        );
+
+
+    list.innerHTML =
+        "";
+
+
+    Object.entries(
+        players
+    )
+    .forEach(
+        ([id, player]) => {
+
+            const row =
+                document
+                .createElement(
+                    "div"
+                );
+
+
+            row.className =
+                "player";
+
+
+            let text =
+                player.nickname;
+
+
+            if (
+                id ===
+                playerId
+            ) {
+
+                text +=
+                    "（你）";
+
+            }
+
+
+            if (
+                id ===
+                roomData.hostId
+            ) {
+
+                text +=
+                    " 👑";
+
+            }
+
+
+            if (
+                player.status ===
+                "spectator"
+            ) {
+
+                row.classList.add(
+                    "spectator"
+                );
+
+
+                text +=
+                    "　👀 觀看中";
+
+            }
+
+            else {
+
+                row.classList.add(
+                    "active"
+                );
+
+
+                text +=
+                    player.ready
+                    ? "　✅ 已出拳"
+                    : "　⏳ 尚未出拳";
+
+            }
+
+
+            row.innerText =
+                text;
+
+
+            list.appendChild(
+                row
+            );
+
+        }
+    );
+
+}
+
+
+// ==========================================
+// 自己狀態
+// ==========================================
+
+function updateGame(
+    players
+) {
+
+    const me =
+        players[
+            playerId
+        ];
+
+
+    if (!me) {
+
+        return;
+    }
+
+
+    const buttons =
+        document
+        .querySelectorAll(
+            ".choice"
+        );
+
+
+    if (
+        me.status ===
+        "spectator"
+    ) {
+
+        buttons.forEach(
+            button =>
+                button.disabled =
+                    true
+        );
+
+
+        document
+        .getElementById(
+            "spectatorMessage"
+        )
+        .style.display =
+            "block";
+
+    }
+
+    else {
+
+        document
+        .getElementById(
+            "spectatorMessage"
+        )
+        .style.display =
+            "none";
+
+
+        buttons.forEach(
+            button => {
+
+                button.disabled =
+                    me.ready ||
+                    roomData.roundStatus ===
+                    "ended";
+
+            }
+        );
+
+    }
+
+
+    const activePlayers =
+        Object.values(
+            players
+        )
+        .filter(
+            player =>
+                player.status ===
+                "active"
+        );
+
+
+    const readyPlayers =
+        activePlayers
+        .filter(
+            player =>
+                player.ready
+        );
+
+
+    document
+    .getElementById(
+        "status"
+    )
+    .innerText =
+        "本輪已有 " +
+        readyPlayers.length +
+        " / " +
+        activePlayers.length +
+        " 位參賽者出拳";
+
+}
+
+
+// ==========================================
+// 出拳
+// ==========================================
+
+window.choose =
+async function(choice) {
+
+
+    if (
+        roomData.roundStatus ===
+        "ended"
+    ) {
+
+        return;
+    }
+
+
+    try {
+
+        await runTransaction(
+
+            db,
+
+            async transaction => {
+
+
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                if (
+                    !snapshot.exists()
+                ) {
+
+                    return;
+                }
+
+
+                const data =
+                    snapshot.data();
+
+
+                const players = {
+                    ...(data.players || {})
+                };
+
+
+                const me =
+                    players[
+                        playerId
+                    ];
+
+
+                if (
+                    !me ||
+                    me.status !==
+                    "active"
+                ) {
+
+                    throw new Error(
+                        "你目前不能參賽"
+                    );
+                }
+
+
+                if (
+                    me.ready
+                ) {
+
+                    return;
+                }
+
+
+                players[
+                    playerId
+                ] = {
+
+                    ...me,
+
+                    choice:
+                        choice,
+
+                    ready:
+                        true
+
+                };
+
+
+                transaction.update(
+                    roomRef,
+                    {
+                        players:
+                            players
+                    }
+                );
+
+            }
+
+        );
+
+    }
+
+    catch(error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+};
+
+
+// ==========================================
+// 房主結束本輪
+// ==========================================
+
+window.endRound =
+async function() {
+
+
+    if (!isHost) {
+
+        return;
+    }
+
+
+    try {
+
+        await runTransaction(
+
+            db,
+
+            async transaction => {
+
+
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                if (
+                    !snapshot.exists()
+                ) {
+
+                    return;
+                }
+
+
+                const data =
+                    snapshot.data();
+
+
+                if (
+                    data.hostId !==
+                    playerId
+                ) {
+
+                    throw new Error(
+                        "只有房主可以結束本輪"
+                    );
+                }
+
+
+                const players = {
+                    ...(data.players || {})
+                };
+
+
+                const participants =
+                    Object.entries(
+                        players
+                    )
+                    .filter(
+                        ([id, player]) =>
+                            player.status ===
+                            "active" &&
+                            player.ready
+                    );
+
+
+                if (
+                    participants.length <
+                    2
+                ) {
+
+                    throw new Error(
+                        "至少需要 2 位玩家出拳才能結束本輪"
+                    );
+                }
+
+
+                const choices =
+                    [
+                        ...new Set(
+                            participants.map(
+                                ([id, player]) =>
+                                    player.choice
+                            )
+                        )
+                    ];
+
+
+                // =================================
+                // 有明確輸贏
+                // =================================
+
+                if (
+                    choices.length ===
+                    2
+                ) {
+
+                    let winningChoice;
+
+
+                    if (
+                        choices.includes(
+                            "rock"
+                        ) &&
+                        choices.includes(
+                            "scissors"
+                        )
+                    ) {
+
+                        winningChoice =
+                            "rock";
+
+                    }
+
+
+                    else if (
+                        choices.includes(
+                            "scissors"
+                        ) &&
+                        choices.includes(
+                            "paper"
+                        )
+                    ) {
+
+                        winningChoice =
+                            "scissors";
+
+                    }
+
+
+                    else {
+
+                        winningChoice =
+                            "paper";
+
+                    }
+
+
+                    participants.forEach(
+                        ([id, player]) => {
+
+                            if (
+                                player.choice !==
+                                winningChoice
+                            ) {
+
+                                players[
+                                    id
+                                ] = {
+
+                                    ...player,
+
+                                    status:
+                                        "spectator"
+
+                                };
+
+                            }
+
+                        }
+                    );
+
+                }
+
+
+                // 沒出拳的人本輪不淘汰
+                // 三種都有 = 平手
+                // 全部相同 = 平手
+
+
+                transaction.update(
+                    roomRef,
+                    {
+
+                        players:
+                            players,
+
+                        roundStatus:
+                            "ended"
+
+                    }
+                );
+
+            }
+
+        );
+
+    }
+
+    catch(error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+};
+
+
+// ==========================================
+// 顯示本輪結果
+// ==========================================
+
+function showRoundResult(
+    players
+) {
+
+    const emoji = {
+
+        rock:
+            "✊ 石頭",
+
+        scissors:
+            "✌️ 剪刀",
+
+        paper:
+            "🖐️ 布"
+
+    };
+
+
+    let html =
+        "<h3>🎊 本輪結果</h3>";
+
+
+    Object.values(
+        players
+    )
+    .forEach(
+        player => {
+
+            if (
+                player.choice
+            ) {
+
+                html +=
+                    escapeHtml(
+                        player.nickname
+                    ) +
+                    "：" +
+                    emoji[
+                        player.choice
+                    ];
+
+
+                if (
+                    player.status ===
+                    "spectator"
+                ) {
+
+                    html +=
+                        "　❌ 淘汰";
+
+                }
+
+                else {
+
+                    html +=
+                        "　✅ 晉級";
+
+                }
+
+
+                html +=
+                    "<br>";
+
+            }
+
+        }
+    );
+
+
+    document
+    .getElementById(
+        "result"
+    )
+    .innerHTML =
+        html;
+
+
+    if (
+        isHost
+    ) {
+
+        document
+        .getElementById(
+            "endRoundBtn"
+        )
+        .style.display =
+            "none";
+
+
+        document
+        .getElementById(
+            "nextRoundBtn"
+        )
+        .style.display =
+            "inline-block";
+
+    }
+
+}
+
+
+// ==========================================
+// 下一輪
+// ==========================================
+
+window.nextRound =
+async function() {
+
+
+    if (!isHost) {
+
+        return;
+    }
+
+
+    try {
+
+        await runTransaction(
+
+            db,
+
+            async transaction => {
+
+
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                const data =
+                    snapshot.data();
+
+
+                const players = {
+                    ...(data.players || {})
+                };
+
+
+                Object.keys(
+                    players
+                )
+                .forEach(
+                    id => {
+
+                        players[
+                            id
+                        ] = {
+
+                            ...players[id],
+
+                            choice:
+                                null,
+
+                            ready:
+                                false
+
+                        };
+
+                    }
+                );
+
+
+                transaction.update(
+                    roomRef,
+                    {
+
+                        players:
+                            players,
+
+                        round:
+                            (
+                                data.round ||
+                                1
+                            ) + 1,
+
+                        roundStatus:
+                            "playing"
+
+                    }
+                );
+
+            }
+
+        );
+
+    }
+
+    catch(error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+};
+
+
+// ==========================================
+// 最終勝者
+// ==========================================
+
+function checkFinalWinner(
+    players
+) {
+
+    const active =
+        Object.values(
+            players
+        )
+        .filter(
+            player =>
+                player.status ===
+                "active"
+        );
+
+
+    if (
+        active.length ===
+        1 &&
+        Object.keys(
+            players
+        ).length > 1
+    ) {
+
+        document
+        .getElementById(
+            "winnerArea"
+        )
+        .style.display =
+            "block";
+
+
+        document
+        .getElementById(
+            "finalWinner"
+        )
+        .innerText =
+            "🏆 " +
+            active[0].nickname +
+            " 獲勝！";
+
+
+        document
+        .querySelectorAll(
+            ".choice"
+        )
+        .forEach(
+            button =>
+                button.disabled =
+                    true
+        );
+
+
+        if (
+            isHost
+        ) {
+
+            document
+            .getElementById(
+                "nextRoundBtn"
+            )
+            .style.display =
+                "none";
+
+
+            document
+            .getElementById(
+                "endRoundBtn"
+            )
+            .style.display =
+                "none";
+
+        }
+
+    }
+
+}
+
+
+// ==========================================
+// 分享
+// ==========================================
+
+window.copyInviteLink =
+async function() {
+
+
+    const url =
+        "https://mayimai13.github.io/janken-game/?room=" +
+        roomCode;
+
+
+    try {
+
+        await navigator
+        .clipboard
+        .writeText(
+            url
+        );
+
+
+        document
+        .getElementById(
+            "copyMessage"
+        )
+        .innerText =
+            "✅ 邀請連結已複製";
+
+    }
+
+    catch {
+
+        prompt(
+            "請複製邀請連結",
+            url
+        );
+
+    }
+
+};
+
+
+// ==========================================
+// 防止暱稱插入 HTML
+// ==========================================
+
+function escapeHtml(
+    text
+) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.textContent =
+        text;
+
+
+    return div.innerHTML;
+
+}
+
+</script>
+
+</body>
+</html>

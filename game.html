@@ -395,8 +395,6 @@ button:disabled {
 </div>
 
 
-<!-- 房主一般控制 -->
-
 <div id="hostControls">
 
 <div class="hint">
@@ -706,6 +704,110 @@ const groupNames = {
 
 
 // ======================================
+// 工具：取得 active 玩家
+// ======================================
+
+function getActivePlayers(
+    players
+) {
+
+    return Object.values(
+        players
+    )
+    .filter(
+        p =>
+            p.status ===
+            "active"
+    );
+
+}
+
+
+// ======================================
+// 工具：是否產生總冠軍
+// 分組階段不能在組內直接判總冠軍
+// ======================================
+
+function shouldFinishTournament(
+    players,
+    stage
+) {
+
+    const active =
+        getActivePlayers(
+            players
+        );
+
+
+    return (
+        stage !== "group" &&
+        active.length === 1 &&
+        Object.keys(players).length > 1
+    );
+
+}
+
+
+// ======================================
+// 工具：交易內直接設定冠軍
+// ======================================
+
+function buildFinishedUpdate(
+    players
+) {
+
+    const active =
+        getActivePlayers(
+            players
+        );
+
+
+    if (
+        active.length !==
+        1
+    ) {
+
+        return null;
+
+    }
+
+
+    return {
+
+        players:
+            players,
+
+        status:
+            "finished",
+
+        roundStatus:
+            "finished",
+
+        winner:
+            active[0].nickname,
+
+        winnerPlayerId:
+            Object.entries(
+                players
+            )
+            .find(
+                (
+                    [
+                        id,
+                        p
+                    ]
+                ) =>
+                    p.status ===
+                    "active"
+            )?.[0] ||
+            null
+
+    };
+
+}
+
+
+// ======================================
 // 即時監聽
 // ======================================
 
@@ -822,6 +924,24 @@ onSnapshot(
 
 function updateJoinStatus() {
 
+    if (
+        roomData.status ===
+        "finished"
+    ) {
+
+        document
+        .getElementById(
+            "joinStatus"
+        )
+        .innerText =
+            "🏆 比賽已結束";
+
+
+        return;
+
+    }
+
+
     document
     .getElementById(
         "joinStatus"
@@ -850,7 +970,9 @@ function updateJoinStatus() {
 
     btn.disabled =
         roomData.joinOpen ===
-        false;
+        false ||
+        roomData.status ===
+        "finished";
 
 
     btn.innerText =
@@ -938,6 +1060,18 @@ function renderPlayers(
 
 
             if (
+                roomData.status ===
+                "finished" &&
+                player.status ===
+                "active"
+            ) {
+
+                text +=
+                    "　🏆 冠軍";
+
+            }
+
+            else if (
                 player.status ===
                 "spectator"
             ) {
@@ -1069,6 +1203,68 @@ function updateMainUI(
         ];
 
 
+    // 比賽結束
+    if (
+        roomData.status ===
+        "finished"
+    ) {
+
+        choiceArea.style.display =
+            "none";
+
+
+        document
+        .getElementById(
+            "watchMessage"
+        )
+        .style.display =
+            "block";
+
+
+        document
+        .getElementById(
+            "gameTitle"
+        )
+        .innerText =
+            isHost
+            ? "🏆 比賽已結束"
+            : (
+                me &&
+                me.status ===
+                "active"
+                ? "🏆 你是冠軍！"
+                : "👀 比賽已結束"
+              );
+
+
+        document
+        .getElementById(
+            "watchMessage"
+        )
+        .innerText =
+            roomData.winner
+            ? "🏆 冠軍：" +
+              roomData.winner
+            : "🏆 比賽已結束";
+
+
+        buttons.forEach(
+            btn =>
+                btn.disabled =
+                    true
+        );
+
+
+        updateStatus(
+            players
+        );
+
+
+        return;
+
+    }
+
+
     if (
         isHost
     ) {
@@ -1167,33 +1363,18 @@ function updateMainUI(
                 "block";
 
 
-            if (
+            document
+            .getElementById(
+                "watchMessage"
+            )
+            .innerText =
                 roomData.activeGroup
-            ) {
-
-                document
-                .getElementById(
-                    "watchMessage"
-                )
-                .innerText =
-                    "目前由 " +
-                    groupNames[
-                        roomData.activeGroup
-                    ] +
-                    " 進行比賽";
-
-            }
-
-            else {
-
-                document
-                .getElementById(
-                    "watchMessage"
-                )
-                .innerText =
-                    "等待房主選擇下一組比賽";
-
-            }
+                ? "目前由 " +
+                  groupNames[
+                    roomData.activeGroup
+                  ] +
+                  " 進行比賽"
+                : "等待房主選擇下一組比賽";
 
         }
 
@@ -1354,14 +1535,30 @@ function updateStatus(
 ) {
 
     const active =
-        Object.values(
+        getActivePlayers(
             players
-        )
-        .filter(
-            p =>
-                p.status ===
-                "active"
         );
+
+
+    if (
+        roomData.status ===
+        "finished"
+    ) {
+
+        document
+        .getElementById(
+            "status"
+        )
+        .innerText =
+            roomData.winner
+            ? "🏆 冠軍：" +
+              roomData.winner
+            : "比賽已結束";
+
+
+        return;
+
+    }
 
 
     if (
@@ -1471,6 +1668,17 @@ function updateHostControls() {
         "none";
 
 
+    // 冠軍後全部鎖住
+    if (
+        roomData.status ===
+        "finished"
+    ) {
+
+        return;
+
+    }
+
+
     if (
         roomData.stage ===
         "group"
@@ -1528,8 +1736,22 @@ function updateHostControls() {
         "ended"
     ) {
 
-        next.style.display =
-            "inline-block";
+        const active =
+            getActivePlayers(
+                roomData.players ||
+                {}
+            );
+
+
+        if (
+            active.length >
+            1
+        ) {
+
+            next.style.display =
+                "inline-block";
+
+        }
 
     }
 
@@ -1544,7 +1766,9 @@ window.closeJoining =
 async function() {
 
     if (
-        !isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -1553,14 +1777,9 @@ async function() {
 
 
     const active =
-        Object.values(
+        getActivePlayers(
             roomData.players ||
             {}
-        )
-        .filter(
-            p =>
-                p.status ===
-                "active"
         );
 
 
@@ -1620,74 +1839,9 @@ window.startRound =
 async function() {
 
     if (
-        !isHost
-    ) {
-
-        return;
-
-    }
-
-
-    await runTransaction(
-
-        db,
-
-        async transaction => {
-
-
-            const snap =
-                await transaction.get(
-                    roomRef
-                );
-
-
-            const data =
-                snap.data();
-
-
-            if (
-                data.joinOpen !==
-                false
-            ) {
-
-                throw new Error(
-                    "請先結束加入"
-                );
-
-            }
-
-
-            transaction.update(
-
-                roomRef,
-
-                {
-
-                    roundStatus:
-                        "playing"
-
-                }
-
-            );
-
-        }
-
-    );
-
-};
-
-
-// ======================================
-// 玩家出拳
-// ======================================
-
-window.choose =
-async function(
-    choice
-) {
-
-    if (
-        isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -1712,6 +1866,118 @@ async function(
 
                 const data =
                     snap.data();
+
+
+                const active =
+                    getActivePlayers(
+                        data.players ||
+                        {}
+                    );
+
+
+                if (
+                    active.length <=
+                    1
+                ) {
+
+                    throw new Error(
+                        "目前只剩 1 位參賽者，不能再開始本輪"
+                    );
+
+                }
+
+
+                if (
+                    data.joinOpen !==
+                    false
+                ) {
+
+                    throw new Error(
+                        "請先結束加入"
+                    );
+
+                }
+
+
+                transaction.update(
+
+                    roomRef,
+
+                    {
+
+                        roundStatus:
+                            "playing"
+
+                    }
+
+                );
+
+            }
+
+        );
+
+    }
+
+    catch(error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+};
+
+
+// ======================================
+// 玩家出拳
+// ======================================
+
+window.choose =
+async function(
+    choice
+) {
+
+    if (
+        isHost ||
+        roomData.status ===
+        "finished"
+    ) {
+
+        return;
+
+    }
+
+
+    try {
+
+        await runTransaction(
+
+            db,
+
+            async transaction => {
+
+
+                const snap =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                const data =
+                    snap.data();
+
+
+                if (
+                    data.status ===
+                    "finished"
+                ) {
+
+                    throw new Error(
+                        "比賽已結束"
+                    );
+
+                }
 
 
                 const players = {
@@ -1836,7 +2102,9 @@ window.endRound =
 async function() {
 
     if (
-        !isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -1909,7 +2177,6 @@ async function() {
                 }
 
 
-                // 沒出拳者在截止時淘汰
                 activeEntries.forEach(
 
                     (
@@ -1944,7 +2211,7 @@ async function() {
                 );
 
 
-                // 第一輪先交給房主選擇是否分組
+                // 第一輪先讓房主選擇是否分組
                 if (
                     (
                         data.round ||
@@ -2004,6 +2271,35 @@ async function() {
                 applyNormalElimination(
                     players
                 );
+
+
+                // 一般模式淘汰後只剩一人，直接冠軍
+                const activeAfter =
+                    getActivePlayers(
+                        players
+                    );
+
+
+                if (
+                    activeAfter.length ===
+                    1
+                ) {
+
+                    const finishUpdate =
+                        buildFinishedUpdate(
+                            players
+                        );
+
+
+                    transaction.update(
+                        roomRef,
+                        finishUpdate
+                    );
+
+
+                    return;
+
+                }
 
 
                 transaction.update(
@@ -2147,6 +2443,8 @@ function updateGroupDecision(
 
     if (
         !isHost ||
+        roomData.status ===
+        "finished" ||
         roomData.roundStatus !==
         "firstDecision"
     ) {
@@ -2232,7 +2530,9 @@ window.continueWithoutGroups =
 async function() {
 
     if (
-        !isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -2265,6 +2565,50 @@ async function() {
             applyNormalElimination(
                 players
             );
+
+
+            const activeAfter =
+                getActivePlayers(
+                    players
+                );
+
+
+            if (
+                activeAfter.length ===
+                1
+            ) {
+
+                const finishUpdate =
+                    buildFinishedUpdate(
+                        players
+                    );
+
+
+                transaction.update(
+
+                    roomRef,
+
+                    {
+
+                        ...finishUpdate,
+
+                        firstRoundDecision:
+                            true,
+
+                        groupMode:
+                            false,
+
+                        stage:
+                            "normal"
+
+                    }
+
+                );
+
+
+                return;
+
+            }
 
 
             transaction.update(
@@ -2307,7 +2651,9 @@ window.enableGroupMode =
 async function() {
 
     if (
-        !isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -2379,6 +2725,7 @@ async function() {
                         1
                     ) {
 
+                        // 組內一人只是自動晉級，不是總冠軍
                         statuses[
                             group
                         ] =
@@ -2399,7 +2746,6 @@ async function() {
             );
 
 
-            // 清空第一輪拳，準備分組重猜
             Object.keys(
                 players
             )
@@ -2485,6 +2831,8 @@ function updateGroupControl(
 
 
     if (
+        roomData.status ===
+        "finished" ||
         roomData.stage !==
         "group"
     ) {
@@ -2778,7 +3126,8 @@ function updateGroupControl(
         "finishGroupsBtn"
     )
     .style.display =
-        allDone
+        allDone &&
+        !roomData.activeGroup
         ? "inline-block"
         : "none";
 
@@ -2795,7 +3144,9 @@ async function(
 ) {
 
     if (
-        !isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -2803,108 +3154,145 @@ async function(
     }
 
 
-    await runTransaction(
+    try {
 
-        db,
+        await runTransaction(
 
-        async transaction => {
+            db,
+
+            async transaction => {
 
 
-            const snap =
-                await transaction.get(
-                    roomRef
+                const snap =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                const data =
+                    snap.data();
+
+
+                if (
+                    data.activeGroup
+                ) {
+
+                    throw new Error(
+                        "目前已有組別正在比賽"
+                    );
+
+                }
+
+
+                const players = {
+                    ...(data.players || {})
+                };
+
+
+                const members =
+                    Object.values(
+                        players
+                    )
+                    .filter(
+                        p =>
+                            p.status ===
+                            "active" &&
+                            p.group ===
+                            group
+                    );
+
+
+                if (
+                    members.length <=
+                    1
+                ) {
+
+                    throw new Error(
+                        "此組不需要比賽"
+                    );
+
+                }
+
+
+                const statuses = {
+                    ...(data.groupStatuses || {})
+                };
+
+
+                Object.keys(
+                    players
+                )
+                .forEach(
+                    id => {
+
+                        if (
+                            players[id].status ===
+                            "active" &&
+                            players[id].group ===
+                            group
+                        ) {
+
+                            players[
+                                id
+                            ] = {
+
+                                ...players[id],
+
+                                choice:
+                                    null,
+
+                                ready:
+                                    false
+
+                            };
+
+                        }
+
+                    }
                 );
 
 
-            const data =
-                snap.data();
+                statuses[
+                    group
+                ] =
+                    "playing";
 
 
-            if (
-                data.activeGroup
-            ) {
+                transaction.update(
 
-                throw new Error(
-                    "目前已有組別正在比賽"
+                    roomRef,
+
+                    {
+
+                        players:
+                            players,
+
+                        activeGroup:
+                            group,
+
+                        groupStatuses:
+                            statuses,
+
+                        roundStatus:
+                            "groupPlaying"
+
+                    }
+
                 );
 
             }
 
+        );
 
-            const players = {
-                ...(data.players || {})
-            };
+    }
 
+    catch(error) {
 
-            const statuses = {
-                ...(data.groupStatuses || {})
-            };
+        alert(
+            error.message
+        );
 
-
-            Object.keys(
-                players
-            )
-            .forEach(
-                id => {
-
-                    if (
-                        players[id].status ===
-                        "active" &&
-                        players[id].group ===
-                        group
-                    ) {
-
-                        players[
-                            id
-                        ] = {
-
-                            ...players[id],
-
-                            choice:
-                                null,
-
-                            ready:
-                                false
-
-                        };
-
-                    }
-
-                }
-            );
-
-
-            statuses[
-                group
-            ] =
-                "playing";
-
-
-            transaction.update(
-
-                roomRef,
-
-                {
-
-                    players:
-                        players,
-
-                    activeGroup:
-                        group,
-
-                    groupStatuses:
-                        statuses,
-
-                    roundStatus:
-                        "groupPlaying"
-
-                }
-
-            );
-
-        }
-
-    );
+    }
 
 };
 
@@ -2919,7 +3307,9 @@ async function(
 ) {
 
     if (
-        !isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -2998,7 +3388,6 @@ async function(
                 }
 
 
-                // 未出拳者淘汰
                 members.forEach(
 
                     (
@@ -3049,7 +3438,7 @@ async function(
                     ];
 
 
-                // 同拳或三種都有 = 平手重賽
+                // 同拳或三種都有 = 該組重賽
                 if (
                     choices.length ===
                     1 ||
@@ -3157,6 +3546,7 @@ async function(
                 );
 
 
+                // 注意：組內剩一人只是該組晉級，不直接判總冠軍
                 statuses[
                     group
                 ] =
@@ -3210,7 +3600,9 @@ window.finishGroupStage =
 async function() {
 
     if (
-        !isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -3218,96 +3610,221 @@ async function() {
     }
 
 
-    await runTransaction(
+    try {
 
-        db,
+        await runTransaction(
 
-        async transaction => {
+            db,
+
+            async transaction => {
 
 
-            const snap =
-                await transaction.get(
-                    roomRef
+                const snap =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                const data =
+                    snap.data();
+
+
+                const statuses =
+                    data.groupStatuses ||
+                    {};
+
+
+                const allDone =
+                    [
+                        "rock",
+                        "scissors",
+                        "paper"
+                    ]
+                    .every(
+                        group =>
+                            statuses[group] ===
+                            "completed" ||
+                            statuses[group] ===
+                            "empty"
+                    );
+
+
+                if (
+                    !allDone
+                ) {
+
+                    throw new Error(
+                        "還有組別尚未完成"
+                    );
+
+                }
+
+
+                const players = {
+                    ...(data.players || {})
+                };
+
+
+                const active =
+                    getActivePlayers(
+                        players
+                    );
+
+
+                // 所有分組完成後，如果全場只剩一人，這時才是總冠軍
+                if (
+                    active.length ===
+                    1
+                ) {
+
+                    Object.keys(
+                        players
+                    )
+                    .forEach(
+                        id => {
+
+                            if (
+                                players[id].status ===
+                                "active"
+                            ) {
+
+                                players[
+                                    id
+                                ] = {
+
+                                    ...players[id],
+
+                                    group:
+                                        null,
+
+                                    choice:
+                                        null,
+
+                                    ready:
+                                        false
+
+                                };
+
+                            }
+
+                        }
+                    );
+
+
+                    const finishUpdate =
+                        buildFinishedUpdate(
+                            players
+                        );
+
+
+                    transaction.update(
+
+                        roomRef,
+
+                        {
+
+                            ...finishUpdate,
+
+                            groupMode:
+                                false,
+
+                            stage:
+                                "normal",
+
+                            activeGroup:
+                                null,
+
+                            groupStatuses:
+                                {}
+
+                        }
+
+                    );
+
+
+                    return;
+
+                }
+
+
+                Object.keys(
+                    players
+                )
+                .forEach(
+                    id => {
+
+                        if (
+                            players[id].status ===
+                            "active"
+                        ) {
+
+                            players[
+                                id
+                            ] = {
+
+                                ...players[id],
+
+                                group:
+                                    null,
+
+                                choice:
+                                    null,
+
+                                ready:
+                                    false
+
+                            };
+
+                        }
+
+                    }
                 );
 
 
-            const data =
-                snap.data();
+                transaction.update(
 
+                    roomRef,
 
-            const players = {
-                ...(data.players || {})
-            };
+                    {
 
+                        players:
+                            players,
 
-            Object.keys(
-                players
-            )
-            .forEach(
-                id => {
+                        groupMode:
+                            false,
 
-                    if (
-                        players[id].status ===
-                        "active"
-                    ) {
+                        stage:
+                            "normal",
 
-                        players[
-                            id
-                        ] = {
+                        activeGroup:
+                            null,
 
-                            ...players[id],
+                        groupStatuses:
+                            {},
 
-                            group:
-                                null,
+                        round:
+                            2,
 
-                            choice:
-                                null,
-
-                            ready:
-                                false
-
-                        };
+                        roundStatus:
+                            "waiting"
 
                     }
 
-                }
-            );
+                );
 
+            }
 
-            transaction.update(
+        );
 
-                roomRef,
+    }
 
-                {
+    catch(error) {
 
-                    players:
-                        players,
+        alert(
+            error.message
+        );
 
-                    groupMode:
-                        false,
-
-                    stage:
-                        "normal",
-
-                    activeGroup:
-                        null,
-
-                    groupStatuses:
-                        {},
-
-                    round:
-                        2,
-
-                    roundStatus:
-                        "waiting"
-
-                }
-
-            );
-
-        }
-
-    );
+    }
 
 };
 
@@ -3320,7 +3837,9 @@ window.prepareNextRound =
 async function() {
 
     if (
-        !isHost
+        !isHost ||
+        roomData.status ===
+        "finished"
     ) {
 
         return;
@@ -3328,84 +3847,136 @@ async function() {
     }
 
 
-    await runTransaction(
+    try {
 
-        db,
+        await runTransaction(
 
-        async transaction => {
+            db,
+
+            async transaction => {
 
 
-            const snap =
-                await transaction.get(
-                    roomRef
+                const snap =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                const data =
+                    snap.data();
+
+
+                const players = {
+                    ...(data.players || {})
+                };
+
+
+                const active =
+                    getActivePlayers(
+                        players
+                    );
+
+
+                if (
+                    active.length ===
+                    1
+                ) {
+
+                    const finishUpdate =
+                        buildFinishedUpdate(
+                            players
+                        );
+
+
+                    transaction.update(
+                        roomRef,
+                        finishUpdate
+                    );
+
+
+                    return;
+
+                }
+
+
+                if (
+                    active.length <
+                    2
+                ) {
+
+                    throw new Error(
+                        "沒有足夠參賽者進入下一輪"
+                    );
+
+                }
+
+
+                Object.keys(
+                    players
+                )
+                .forEach(
+                    id => {
+
+                        if (
+                            players[id].status ===
+                            "active"
+                        ) {
+
+                            players[
+                                id
+                            ] = {
+
+                                ...players[id],
+
+                                choice:
+                                    null,
+
+                                ready:
+                                    false
+
+                            };
+
+                        }
+
+                    }
                 );
 
 
-            const data =
-                snap.data();
+                transaction.update(
 
+                    roomRef,
 
-            const players = {
-                ...(data.players || {})
-            };
+                    {
 
+                        players:
+                            players,
 
-            Object.keys(
-                players
-            )
-            .forEach(
-                id => {
+                        round:
+                            (
+                                data.round ||
+                                1
+                            ) + 1,
 
-                    if (
-                        players[id].status ===
-                        "active"
-                    ) {
-
-                        players[
-                            id
-                        ] = {
-
-                            ...players[id],
-
-                            choice:
-                                null,
-
-                            ready:
-                                false
-
-                        };
+                        roundStatus:
+                            "waiting"
 
                     }
 
-                }
-            );
+                );
 
+            }
 
-            transaction.update(
+        );
 
-                roomRef,
+    }
 
-                {
+    catch(error) {
 
-                    players:
-                        players,
+        alert(
+            error.message
+        );
 
-                    round:
-                        (
-                            data.round ||
-                            1
-                        ) + 1,
-
-                    roundStatus:
-                        "waiting"
-
-                }
-
-            );
-
-        }
-
-    );
+    }
 
 };
 
@@ -3452,7 +4023,7 @@ function getWinningChoice(
 
 
 // ======================================
-// 冠軍
+// 冠軍顯示
 // ======================================
 
 function checkWinner(
@@ -3460,20 +4031,9 @@ function checkWinner(
 ) {
 
     const active =
-        Object.values(
+        getActivePlayers(
             players
-        )
-        .filter(
-            p =>
-                p.status ===
-                "active"
         );
-
-
-    const total =
-        Object.keys(
-            players
-        ).length;
 
 
     const winnerArea =
@@ -3484,12 +4044,10 @@ function checkWinner(
 
 
     if (
+        roomData.status ===
+        "finished" &&
         active.length ===
-        1 &&
-        total >
-        1 &&
-        roomData.stage !==
-        "group"
+        1
     ) {
 
         winnerArea.style.display =
@@ -3502,17 +4060,20 @@ function checkWinner(
         )
         .innerText =
             "🏆 " +
-            active[0].nickname +
+            (
+                roomData.winner ||
+                active[0].nickname
+            ) +
             " 獲勝！";
 
-    }
 
-    else {
-
-        winnerArea.style.display =
-            "none";
+        return;
 
     }
+
+
+    winnerArea.style.display =
+        "none";
 
 }
 
@@ -3760,39 +4321,67 @@ async function() {
     }
 
 
-    await addDoc(
+    if (
+        text.length >
+        100
+    ) {
 
-        chatRef,
-
-        {
-
-            playerId:
-                playerId,
-
-            nickname:
-                nickname,
-
-            role:
-                isHost
-                ? "host"
-                : "player",
-
-            text:
-                text,
-
-            createdAt:
-                serverTimestamp()
-
-        }
-
-    );
+        alert(
+            "訊息最多 100 字"
+        );
 
 
-    input.value =
-        "";
+        return;
+
+    }
 
 
-    updateChatCount();
+    try {
+
+        await addDoc(
+
+            chatRef,
+
+            {
+
+                playerId:
+                    playerId,
+
+                nickname:
+                    nickname,
+
+                role:
+                    isHost
+                    ? "host"
+                    : "player",
+
+                text:
+                    text,
+
+                createdAt:
+                    serverTimestamp()
+
+            }
+
+        );
+
+
+        input.value =
+            "";
+
+
+        updateChatCount();
+
+    }
+
+    catch(error) {
+
+        alert(
+            "送出失敗：" +
+            error.message
+        );
+
+    }
 
 };
 

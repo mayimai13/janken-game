@@ -61,6 +61,10 @@
             background: #555;
         }
 
+        .share-btn {
+            background: #00b900;
+        }
+
         .test-btn {
             background: #7b61ff;
         }
@@ -184,12 +188,20 @@
 
         <div id="roomCodeDisplay"></div>
 
+        <button
+            class="normal-btn share-btn"
+            onclick="shareRoom()"
+        >
+            📤 分享房間
+        </button>
+
         <div id="playerList"></div>
 
         <div id="status">
             等待玩家...
         </div>
 
+        <!-- 測試功能 -->
         <div class="test-area">
 
             <div class="test-title">
@@ -250,8 +262,10 @@
 
 </div>
 
+
 <!-- LINE LIFF -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
 
 <script type="module">
 
@@ -270,9 +284,9 @@
     from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
-    // ===============================
+    // ======================================
     // Firebase
-    // ===============================
+    // ======================================
 
     const firebaseConfig = {
 
@@ -300,43 +314,86 @@
     };
 
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const app =
+        initializeApp(firebaseConfig);
+
+    const db =
+        getFirestore(app);
+
 
     let currentUser = null;
     let currentRoom = null;
     let unsubscribeRoom = null;
 
 
-    // ===============================
-    // LINE
-    // ===============================
+    // ======================================
+    // LINE 初始化
+    // ======================================
 
     async function initializeLiff() {
 
         try {
 
             await liff.init({
-                liffId: "2011114180-glOZVk21"
+                liffId:
+                    "2011114180-glOZVk21"
             });
+
 
             if (!liff.isLoggedIn()) {
 
                 liff.login();
+
                 return;
 
             }
 
-            currentUser = await liff.getProfile();
 
-            document.getElementById("userInfo").innerText =
-                "👋 " + currentUser.displayName;
+            currentUser =
+                await liff.getProfile();
+
+
+            document
+            .getElementById("userInfo")
+            .innerText =
+                "👋 " +
+                currentUser.displayName;
+
+
+            // 檢查分享網址有沒有帶 room
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
+
+
+            const sharedRoom =
+                params.get("room");
+
+
+            if (sharedRoom) {
+
+                document
+                .getElementById("roomInput")
+                .value =
+                    sharedRoom;
+
+
+                await joinRoomByCode(
+                    sharedRoom
+                );
+
+            }
+
 
         } catch (error) {
 
             console.error(error);
 
-            document.getElementById("userInfo").innerText =
+
+            document
+            .getElementById("userInfo")
+            .innerText =
                 "❌ LINE 連線失敗";
 
         }
@@ -344,93 +401,125 @@
     }
 
 
-    // ===============================
+    // ======================================
     // 房號
-    // ===============================
+    // ======================================
 
     function generateRoomCode() {
 
         return Math.floor(
-            1000 + Math.random() * 9000
+            1000 +
+            Math.random() * 9000
         ).toString();
 
     }
 
 
-    // ===============================
+    // ======================================
     // 建立房間
-    // ===============================
+    // ======================================
 
-    window.createRoom = async function() {
+    window.createRoom =
+    async function() {
 
         if (!currentUser) {
 
-            alert("LINE 尚未連線完成");
+            alert(
+                "LINE 尚未連線完成"
+            );
+
             return;
 
         }
 
+
         try {
 
-            let roomCode = generateRoomCode();
+            let roomCode =
+                generateRoomCode();
+
 
             let roomRef =
-                doc(db, "rooms", roomCode);
+                doc(
+                    db,
+                    "rooms",
+                    roomCode
+                );
+
 
             let roomSnap =
-                await getDoc(roomRef);
+                await getDoc(
+                    roomRef
+                );
 
 
-            while (roomSnap.exists()) {
+            while (
+                roomSnap.exists()
+            ) {
 
                 roomCode =
                     generateRoomCode();
 
+
                 roomRef =
-                    doc(db, "rooms", roomCode);
+                    doc(
+                        db,
+                        "rooms",
+                        roomCode
+                    );
+
 
                 roomSnap =
-                    await getDoc(roomRef);
+                    await getDoc(
+                        roomRef
+                    );
 
             }
 
 
-            await setDoc(roomRef, {
+            await setDoc(
+                roomRef,
+                {
 
-                createdAt:
-                    serverTimestamp(),
+                    createdAt:
+                        serverTimestamp(),
 
-                hostId:
-                    currentUser.userId,
+                    hostId:
+                        currentUser.userId,
 
-                status:
-                    "waiting",
+                    status:
+                        "waiting",
 
-                players: {
+                    players: {
 
-                    [currentUser.userId]: {
+                        [currentUser.userId]: {
 
-                        displayName:
-                            currentUser.displayName,
+                            displayName:
+                                currentUser.displayName,
 
-                        choice:
-                            null,
+                            choice:
+                                null,
 
-                        ready:
-                            false
+                            ready:
+                                false
+
+                        }
 
                     }
 
                 }
+            );
 
-            });
 
+            enterRoom(
+                roomCode
+            );
 
-            enterRoom(roomCode);
 
         } catch (error) {
 
             console.error(error);
+
 
             alert(
                 "建立房間失敗：" +
@@ -442,19 +531,12 @@
     };
 
 
-    // ===============================
-    // 加入房間
-    // ===============================
+    // ======================================
+    // 手動加入房間
+    // ======================================
 
-    window.joinRoom = async function() {
-
-        if (!currentUser) {
-
-            alert("LINE 尚未連線完成");
-            return;
-
-        }
-
+    window.joinRoom =
+    async function() {
 
         const roomCode =
             document
@@ -463,9 +545,41 @@
             .trim();
 
 
-        if (roomCode.length !== 4) {
+        await joinRoomByCode(
+            roomCode
+        );
 
-            alert("請輸入 4 位房號");
+    };
+
+
+    // ======================================
+    // 加入指定房號
+    // ======================================
+
+    async function joinRoomByCode(
+        roomCode
+    ) {
+
+        if (!currentUser) {
+
+            alert(
+                "LINE 尚未連線完成"
+            );
+
+            return;
+
+        }
+
+
+        if (
+            !roomCode ||
+            roomCode.length !== 4
+        ) {
+
+            alert(
+                "請輸入 4 位房號"
+            );
+
             return;
 
         }
@@ -474,16 +588,27 @@
         try {
 
             const roomRef =
-                doc(db, "rooms", roomCode);
+                doc(
+                    db,
+                    "rooms",
+                    roomCode
+                );
 
 
             const roomSnap =
-                await getDoc(roomRef);
+                await getDoc(
+                    roomRef
+                );
 
 
-            if (!roomSnap.exists()) {
+            if (
+                !roomSnap.exists()
+            ) {
 
-                alert("找不到這個房間");
+                alert(
+                    "找不到這個房間"
+                );
+
                 return;
 
             }
@@ -497,30 +622,50 @@
                 data.players || {};
 
 
-            players[currentUser.userId] = {
+            const oldPlayer =
+                players[
+                    currentUser.userId
+                ];
+
+
+            players[
+                currentUser.userId
+            ] = {
 
                 displayName:
                     currentUser.displayName,
 
                 choice:
-                    null,
+                    oldPlayer
+                    ? oldPlayer.choice
+                    : null,
 
                 ready:
-                    false
+                    oldPlayer
+                    ? oldPlayer.ready
+                    : false
 
             };
 
 
-            await updateDoc(roomRef, {
-                players: players
-            });
+            await updateDoc(
+                roomRef,
+                {
+                    players:
+                        players
+                }
+            );
 
 
-            enterRoom(roomCode);
+            enterRoom(
+                roomCode
+            );
+
 
         } catch (error) {
 
             console.error(error);
+
 
             alert(
                 "加入房間失敗：" +
@@ -529,71 +674,211 @@
 
         }
 
-    };
+    }
 
 
-    // ===============================
-    // 進房
-    // ===============================
+    // ======================================
+    // 進房間
+    // ======================================
 
-    function enterRoom(roomCode) {
+    function enterRoom(
+        roomCode
+    ) {
 
         currentRoom =
             roomCode;
 
 
         document
-        .getElementById("lobbyArea")
+        .getElementById(
+            "lobbyArea"
+        )
         .style.display =
             "none";
 
 
         document
-        .getElementById("roomArea")
+        .getElementById(
+            "roomArea"
+        )
         .style.display =
             "block";
 
 
         document
-        .getElementById("gameArea")
+        .getElementById(
+            "gameArea"
+        )
         .style.display =
             "block";
 
 
         document
-        .getElementById("roomCodeDisplay")
+        .getElementById(
+            "roomCodeDisplay"
+        )
         .innerText =
             roomCode;
 
 
-        listenRoom(roomCode);
+        listenRoom(
+            roomCode
+        );
 
     }
 
 
-    // ===============================
-    // 即時監聽
-    // ===============================
+    // ======================================
+    // 📤 分享房間
+    // ======================================
 
-    function listenRoom(roomCode) {
+    window.shareRoom =
+    async function() {
 
-        if (unsubscribeRoom) {
+        if (!currentRoom) {
+
+            alert(
+                "請先建立房間"
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            // GitHub Pages 原始網址
+            const pageUrl =
+                "https://mayimai13.github.io/janken-game/?room=" +
+                encodeURIComponent(
+                    currentRoom
+                );
+
+
+            // 轉成 LIFF 永久連結
+            const shareUrl =
+                await liff.permanentLink.createUrlBy(
+                    pageUrl
+                );
+
+
+            const message = {
+
+                type:
+                    "text",
+
+                text:
+                    "🎮 一起來玩猜拳！\n\n" +
+                    "房間號碼：" +
+                    currentRoom +
+                    "\n\n" +
+                    "點下面連結加入房間👇\n" +
+                    shareUrl
+
+            };
+
+
+            // LINE 官方建議先確認 API 可用
+            if (
+                liff.isApiAvailable(
+                    "shareTargetPicker"
+                )
+            ) {
+
+                const result =
+                    await liff
+                    .shareTargetPicker(
+                        [message],
+                        {
+                            isMultiple:
+                                true
+                        }
+                    );
+
+
+                if (result) {
+
+                    document
+                    .getElementById(
+                        "status"
+                    )
+                    .innerText =
+                        "✅ 房間邀請已分享";
+
+                }
+
+            } else {
+
+                // 若目前環境不能開分享選擇器
+                await navigator
+                    .clipboard
+                    .writeText(
+                        shareUrl
+                    );
+
+
+                alert(
+                    "目前無法直接開啟 LINE 分享。\n\n" +
+                    "加入連結已複製，可以直接貼給朋友。"
+                );
+
+            }
+
+
+        } catch (error) {
+
+            console.error(error);
+
+
+            alert(
+                "分享失敗：" +
+                error.message
+            );
+
+        }
+
+    };
+
+
+    // ======================================
+    // 即時監聽房間
+    // ======================================
+
+    function listenRoom(
+        roomCode
+    ) {
+
+        if (
+            unsubscribeRoom
+        ) {
+
             unsubscribeRoom();
+
         }
 
 
         const roomRef =
-            doc(db, "rooms", roomCode);
+            doc(
+                db,
+                "rooms",
+                roomCode
+            );
 
 
         unsubscribeRoom =
         onSnapshot(
+
             roomRef,
 
             (snapshot) => {
 
-                if (!snapshot.exists()) {
+                if (
+                    !snapshot.exists()
+                ) {
+
                     return;
+
                 }
 
 
@@ -605,20 +890,103 @@
                     data.players || {};
 
 
-                renderPlayers(players);
+                renderPlayers(
+                    players
+                );
 
-                checkResult(players);
+
+                checkResult(
+                    players
+                );
 
             },
 
             (error) => {
 
-                console.error(error);
+                console.error(
+                    error
+                );
+
 
                 document
-                .getElementById("status")
+                .getElementById(
+                    "status"
+                )
                 .innerText =
                     "❌ 房間連線失敗";
+
+            }
+
+        );
+
+    }
+
+
+    // ======================================
+    // 玩家列表
+    // ======================================
+
+    function renderPlayers(
+        players
+    ) {
+
+        const list =
+            document
+            .getElementById(
+                "playerList"
+            );
+
+
+        list.innerHTML =
+            "";
+
+
+        Object.entries(
+            players
+        )
+        .forEach(
+            ([id, player]) => {
+
+                const row =
+                    document
+                    .createElement(
+                        "div"
+                    );
+
+
+                row.className =
+                    "player-row";
+
+
+                let name =
+                    player.displayName;
+
+
+                if (
+                    id ===
+                    "test-player"
+                ) {
+
+                    name =
+                        "🤖 " +
+                        name;
+
+                }
+
+
+                row.innerText =
+                    name +
+                    "　" +
+                    (
+                        player.ready
+                        ? "✅ 已出拳"
+                        : "⏳ 尚未出拳"
+                    );
+
+
+                list.appendChild(
+                    row
+                );
 
             }
         );
@@ -626,83 +994,45 @@
     }
 
 
-    // ===============================
-    // 玩家列表
-    // ===============================
+    // ======================================
+    // 真人出拳
+    // ======================================
 
-    function renderPlayers(players) {
+    window.choose =
+    async function(choice) {
 
-        const list =
-            document
-            .getElementById("playerList");
+        if (
+            !currentRoom ||
+            !currentUser
+        ) {
 
-
-        list.innerHTML = "";
-
-
-        Object.entries(players)
-        .forEach(([id, player]) => {
-
-            const row =
-                document.createElement("div");
-
-
-            row.className =
-                "player-row";
-
-
-            let name =
-                player.displayName;
-
-
-            if (id === "test-player") {
-
-                name =
-                    "🤖 " + name;
-
-            }
-
-
-            row.innerText =
-                name +
-                "　" +
-                (
-                    player.ready
-                    ? "✅ 已出拳"
-                    : "⏳ 尚未出拳"
-                );
-
-
-            list.appendChild(row);
-
-        });
-
-    }
-
-
-    // ===============================
-    // 真人玩家出拳
-    // ===============================
-
-    window.choose = async function(choice) {
-
-        if (!currentRoom || !currentUser) {
             return;
+
         }
 
 
         try {
 
             const roomRef =
-                doc(db, "rooms", currentRoom);
+                doc(
+                    db,
+                    "rooms",
+                    currentRoom
+                );
 
 
             const roomSnap =
-                await getDoc(roomRef);
+                await getDoc(
+                    roomRef
+                );
 
 
-            if (!roomSnap.exists()) {
+            if (
+                !roomSnap.exists()
+            ) {
+
                 return;
+
             }
 
 
@@ -714,7 +1044,9 @@
                 data.players || {};
 
 
-            players[currentUser.userId] = {
+            players[
+                currentUser.userId
+            ] = {
 
                 displayName:
                     currentUser.displayName,
@@ -728,29 +1060,41 @@
             };
 
 
-            await updateDoc(roomRef, {
-                players: players
-            });
+            await updateDoc(
+                roomRef,
+                {
+                    players:
+                        players
+                }
+            );
 
 
             document
-            .getElementById("status")
+            .getElementById(
+                "status"
+            )
             .innerText =
                 "✅ 你已出拳，等待其他玩家";
 
 
             document
-            .querySelectorAll(".choice")
-            .forEach(button => {
+            .querySelectorAll(
+                ".choice"
+            )
+            .forEach(
+                button => {
 
-                button.disabled = true;
+                    button.disabled =
+                        true;
 
-            });
+                }
+            );
 
 
         } catch (error) {
 
             console.error(error);
+
 
             alert(
                 "出拳失敗：" +
@@ -762,15 +1106,19 @@
     };
 
 
-    // ===============================
+    // ======================================
     // 加入測試玩家
-    // ===============================
+    // ======================================
 
-    window.addTestPlayer = async function() {
+    window.addTestPlayer =
+    async function() {
 
         if (!currentRoom) {
 
-            alert("請先建立房間");
+            alert(
+                "請先建立房間"
+            );
+
             return;
 
         }
@@ -779,15 +1127,25 @@
         try {
 
             const roomRef =
-                doc(db, "rooms", currentRoom);
+                doc(
+                    db,
+                    "rooms",
+                    currentRoom
+                );
 
 
             const roomSnap =
-                await getDoc(roomRef);
+                await getDoc(
+                    roomRef
+                );
 
 
-            if (!roomSnap.exists()) {
+            if (
+                !roomSnap.exists()
+            ) {
+
                 return;
+
             }
 
 
@@ -799,7 +1157,9 @@
                 data.players || {};
 
 
-            players["test-player"] = {
+            players[
+                "test-player"
+            ] = {
 
                 displayName:
                     "測試玩家",
@@ -813,19 +1173,27 @@
             };
 
 
-            await updateDoc(roomRef, {
-                players: players
-            });
+            await updateDoc(
+                roomRef,
+                {
+                    players:
+                        players
+                }
+            );
 
 
             document
-            .getElementById("status")
+            .getElementById(
+                "status"
+            )
             .innerText =
                 "🧪 測試玩家已加入";
+
 
         } catch (error) {
 
             console.error(error);
+
 
             alert(
                 "加入測試玩家失敗：" +
@@ -837,15 +1205,19 @@
     };
 
 
-    // ===============================
+    // ======================================
     // 測試玩家出拳
-    // ===============================
+    // ======================================
 
-    window.testPlayerMove = async function() {
+    window.testPlayerMove =
+    async function() {
 
         if (!currentRoom) {
 
-            alert("請先建立房間");
+            alert(
+                "請先建立房間"
+            );
+
             return;
 
         }
@@ -854,15 +1226,25 @@
         try {
 
             const roomRef =
-                doc(db, "rooms", currentRoom);
+                doc(
+                    db,
+                    "rooms",
+                    currentRoom
+                );
 
 
             const roomSnap =
-                await getDoc(roomRef);
+                await getDoc(
+                    roomRef
+                );
 
 
-            if (!roomSnap.exists()) {
+            if (
+                !roomSnap.exists()
+            ) {
+
                 return;
+
             }
 
 
@@ -874,7 +1256,11 @@
                 data.players || {};
 
 
-            if (!players["test-player"]) {
+            if (
+                !players[
+                    "test-player"
+                ]
+            ) {
 
                 alert(
                     "請先按「加入測試玩家」"
@@ -885,9 +1271,16 @@
             }
 
 
-            if (players["test-player"].ready) {
+            if (
+                players[
+                    "test-player"
+                ].ready
+            ) {
 
-                alert("測試玩家已經出拳");
+                alert(
+                    "測試玩家已經出拳"
+                );
+
                 return;
 
             }
@@ -909,7 +1302,9 @@
                 ];
 
 
-            players["test-player"] = {
+            players[
+                "test-player"
+            ] = {
 
                 displayName:
                     "測試玩家",
@@ -923,19 +1318,27 @@
             };
 
 
-            await updateDoc(roomRef, {
-                players: players
-            });
+            await updateDoc(
+                roomRef,
+                {
+                    players:
+                        players
+                }
+            );
 
 
             document
-            .getElementById("status")
+            .getElementById(
+                "status"
+            )
             .innerText =
                 "🎲 測試玩家已出拳";
+
 
         } catch (error) {
 
             console.error(error);
+
 
             alert(
                 "測試玩家出拳失敗：" +
@@ -947,20 +1350,29 @@
     };
 
 
-    // ===============================
-    // 檢查是否全部完成
-    // ===============================
+    // ======================================
+    // 檢查結果
+    // ======================================
 
-    function checkResult(players) {
+    function checkResult(
+        players
+    ) {
 
         const playerArray =
-            Object.values(players);
+            Object.values(
+                players
+            );
 
 
-        if (playerArray.length < 2) {
+        if (
+            playerArray.length <
+            2
+        ) {
 
             document
-            .getElementById("status")
+            .getElementById(
+                "status"
+            )
             .innerText =
                 "等待其他玩家加入...";
 
@@ -976,10 +1388,14 @@
             );
 
 
-        if (!allReady) {
+        if (
+            !allReady
+        ) {
 
             document
-            .getElementById("status")
+            .getElementById(
+                "status"
+            )
             .innerText =
                 "等待所有玩家出拳...";
 
@@ -988,20 +1404,26 @@
         }
 
 
-        showResult(playerArray);
+        showResult(
+            playerArray
+        );
 
     }
 
 
-    // ===============================
+    // ======================================
     // 公布結果
-    // ===============================
+    // ======================================
 
-    function showResult(players) {
+    function showResult(
+        players
+    ) {
 
         const resultBox =
             document
-            .getElementById("result");
+            .getElementById(
+                "result"
+            );
 
 
         const emoji = {
@@ -1022,15 +1444,19 @@
             "<h3>🎊 全員完成</h3>";
 
 
-        players.forEach(player => {
+        players.forEach(
+            player => {
 
-            html +=
-                player.displayName +
-                "： " +
-                emoji[player.choice] +
-                "<br>";
+                html +=
+                    player.displayName +
+                    "： " +
+                    emoji[
+                        player.choice
+                    ] +
+                    "<br>";
 
-        });
+            }
+        );
 
 
         const choices =
@@ -1056,12 +1482,17 @@
 
         else {
 
-            let winningChoice = "";
+            let winningChoice =
+                "";
 
 
             if (
-                choices.includes("rock") &&
-                choices.includes("scissors")
+                choices.includes(
+                    "rock"
+                ) &&
+                choices.includes(
+                    "scissors"
+                )
             ) {
 
                 winningChoice =
@@ -1069,10 +1500,13 @@
 
             }
 
-
             else if (
-                choices.includes("scissors") &&
-                choices.includes("paper")
+                choices.includes(
+                    "scissors"
+                ) &&
+                choices.includes(
+                    "paper"
+                )
             ) {
 
                 winningChoice =
@@ -1080,10 +1514,13 @@
 
             }
 
-
             else if (
-                choices.includes("paper") &&
-                choices.includes("rock")
+                choices.includes(
+                    "paper"
+                ) &&
+                choices.includes(
+                    "rock"
+                )
             ) {
 
                 winningChoice =
@@ -1118,42 +1555,51 @@
 
 
         document
-        .getElementById("restartBtn")
-        .style.display =
-            "inline-block";
-
-
-        document
-        .getElementById("status")
+        .getElementById(
+            "status"
+        )
         .innerText =
             "🎉 本局已完成";
 
     }
 
 
-    // ===============================
+    // ======================================
     // 再玩一局
-    // ===============================
+    // ======================================
 
-    window.restartGame = async function() {
+    window.restartGame =
+    async function() {
 
         if (!currentRoom) {
+
             return;
+
         }
 
 
         try {
 
             const roomRef =
-                doc(db, "rooms", currentRoom);
+                doc(
+                    db,
+                    "rooms",
+                    currentRoom
+                );
 
 
             const roomSnap =
-                await getDoc(roomRef);
+                await getDoc(
+                    roomRef
+                );
 
 
-            if (!roomSnap.exists()) {
+            if (
+                !roomSnap.exists()
+            ) {
+
                 return;
+
             }
 
 
@@ -1165,55 +1611,70 @@
                 data.players || {};
 
 
-            Object.keys(players)
-            .forEach(id => {
+            Object.keys(
+                players
+            )
+            .forEach(
+                id => {
 
-                players[id].choice = null;
-                players[id].ready = false;
+                    players[id].choice =
+                        null;
 
-            });
+                    players[id].ready =
+                        false;
+
+                }
+            );
 
 
-            await updateDoc(roomRef, {
+            await updateDoc(
+                roomRef,
+                {
 
-                players:
-                    players,
+                    players:
+                        players,
 
-                status:
-                    "waiting"
+                    status:
+                        "waiting"
 
-            });
+                }
+            );
 
 
             document
-            .getElementById("result")
+            .getElementById(
+                "result"
+            )
             .innerHTML =
                 "";
 
 
             document
-            .getElementById("restartBtn")
-            .style.display =
-                "none";
+            .querySelectorAll(
+                ".choice"
+            )
+            .forEach(
+                button => {
+
+                    button.disabled =
+                        false;
+
+                }
+            );
 
 
             document
-            .querySelectorAll(".choice")
-            .forEach(button => {
-
-                button.disabled = false;
-
-            });
-
-
-            document
-            .getElementById("status")
+            .getElementById(
+                "status"
+            )
             .innerText =
                 "🔄 新的一局開始！請出拳";
+
 
         } catch (error) {
 
             console.error(error);
+
 
             alert(
                 "重新開始失敗：" +
@@ -1225,7 +1686,7 @@
     };
 
 
-    // 啟動 LINE
+    // 啟動
     initializeLiff();
 
 </script>

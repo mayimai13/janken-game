@@ -79,8 +79,13 @@ button {
     margin: 15px;
 }
 
-#inviteArea {
+#inviteArea,
+#closedArea {
     display: none;
+}
+
+.closed-icon {
+    font-size: 55px;
 }
 </style>
 </head>
@@ -150,6 +155,27 @@ button {
 
 </div>
 
+
+<!-- 已停止加入 -->
+
+<div id="closedArea" class="card">
+
+<div class="closed-icon">
+🔒
+</div>
+
+<h2>此房間已停止加入</h2>
+
+<p>
+房主已經關閉新玩家加入。
+</p>
+
+<p class="hint">
+已經在房間裡的玩家仍可繼續進行比賽。
+</p>
+
+</div>
+
 </div>
 
 
@@ -204,7 +230,7 @@ const db =
 
 
 // ==========================================
-// 每個分頁自己的匿名 ID
+// 匿名玩家 ID
 // ==========================================
 
 function getPlayerId() {
@@ -248,7 +274,7 @@ const playerId =
 
 
 // ==========================================
-// 看網址是不是邀請連結
+// 邀請房號
 // ==========================================
 
 const params =
@@ -260,25 +286,132 @@ const invitedRoom =
     params.get("room");
 
 
-if (
-    invitedRoom &&
-    /^\d{4}$/.test(invitedRoom)
-) {
+// ==========================================
+// 初始化邀請頁
+// ==========================================
+
+async function initializePage() {
+
+    if (
+        !invitedRoom ||
+        !/^\d{4}$/.test(invitedRoom)
+    ) {
+        return;
+    }
+
+
+    try {
+
+        const roomRef =
+            doc(
+                db,
+                "rooms",
+                invitedRoom
+            );
+
+
+        const roomSnap =
+            await getDoc(
+                roomRef
+            );
+
+
+        document
+        .getElementById("createArea")
+        .style.display =
+            "none";
+
+
+        if (!roomSnap.exists()) {
+
+            showClosed(
+                "找不到這個房間"
+            );
+
+            return;
+        }
+
+
+        const data =
+            roomSnap.data();
+
+
+        if (
+            data.status === "finished"
+        ) {
+
+            showClosed(
+                "這場比賽已經結束"
+            );
+
+            return;
+        }
+
+
+        if (
+            data.joinOpen === false
+        ) {
+
+            showClosed(
+                "房主已經關閉新玩家加入"
+            );
+
+            return;
+        }
+
+
+        document
+        .getElementById("inviteArea")
+        .style.display =
+            "block";
+
+
+        document
+        .getElementById("inviteRoomNumber")
+        .innerText =
+            invitedRoom;
+
+    }
+
+    catch(error) {
+
+        console.error(error);
+
+        showClosed(
+            "讀取房間失敗"
+        );
+    }
+}
+
+
+// ==========================================
+// 關閉畫面
+// ==========================================
+
+function showClosed(text) {
 
     document
     .getElementById("createArea")
     .style.display =
         "none";
 
+
     document
     .getElementById("inviteArea")
     .style.display =
-        "block";
+        "none";
+
 
     document
-    .getElementById("inviteRoomNumber")
+    .getElementById("closedArea")
+    .style.display =
+        "block";
+
+
+    document
+    .querySelector("#closedArea p")
     .innerText =
-        invitedRoom;
+        text;
 }
 
 
@@ -367,8 +500,14 @@ async function() {
                 status:
                     "playing",
 
+                joinOpen:
+                    true,
+
                 round:
                     1,
+
+                roundStatus:
+                    "playing",
 
                 createdAt:
                     serverTimestamp(),
@@ -446,9 +585,7 @@ async function() {
     }
 
 
-    if (
-        !invitedRoom
-    ) {
+    if (!invitedRoom) {
 
         alert(
             "沒有房間號碼"
@@ -478,9 +615,7 @@ async function() {
                     );
 
 
-                if (
-                    !snapshot.exists()
-                ) {
+                if (!snapshot.exists()) {
 
                     throw new Error(
                         "找不到這個遊戲"
@@ -508,19 +643,41 @@ async function() {
                 };
 
 
+                // 已經加入過的玩家可以回來
+                const alreadyJoined =
+                    !!players[playerId];
+
+
+                if (
+                    data.joinOpen === false &&
+                    !alreadyJoined
+                ) {
+
+                    throw new Error(
+                        "此房間已停止加入"
+                    );
+                }
+
+
                 players[playerId] = {
 
                     nickname:
                         nickname,
 
                     status:
-                        "active",
+                        alreadyJoined
+                        ? players[playerId].status
+                        : "active",
 
                     choice:
-                        null,
+                        alreadyJoined
+                        ? players[playerId].choice
+                        : null,
 
                     ready:
-                        false
+                        alreadyJoined
+                        ? players[playerId].ready
+                        : false
                 };
 
 
@@ -561,6 +718,9 @@ async function() {
         );
     }
 };
+
+
+initializePage();
 
 </script>
 

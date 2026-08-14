@@ -101,8 +101,6 @@ button {
 </div>
 
 
-<!-- 建立遊戲 -->
-
 <div id="createArea" class="card">
 
 <h2>👑 建立猜拳遊戲</h2>
@@ -110,11 +108,11 @@ button {
 <input
     id="hostNickname"
     maxlength="12"
-    placeholder="輸入你的匿名暱稱"
+    placeholder="輸入房主暱稱"
 >
 
 <p class="hint">
-建立遊戲的人會成為房主
+房主只負責主持，不參與猜拳
 </p>
 
 <button onclick="createRoom()">
@@ -123,8 +121,6 @@ button {
 
 </div>
 
-
-<!-- 邀請玩家 -->
 
 <div id="inviteArea" class="card">
 
@@ -156,22 +152,16 @@ button {
 </div>
 
 
-<!-- 已停止加入 -->
-
 <div id="closedArea" class="card">
 
 <div class="closed-icon">
 🔒
 </div>
 
-<h2>此房間已停止加入</h2>
+<h2>無法加入</h2>
 
-<p>
-房主已經關閉新玩家加入。
-</p>
-
-<p class="hint">
-已經在房間裡的玩家仍可繼續進行比賽。
+<p id="closedText">
+此房間已停止加入
 </p>
 
 </div>
@@ -198,55 +188,30 @@ from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
 const firebaseConfig = {
-
-    apiKey:
-    "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
-
-    authDomain:
-    "janken-game-69aa6.firebaseapp.com",
-
-    projectId:
-    "janken-game-69aa6",
-
-    storageBucket:
-    "janken-game-69aa6.firebasestorage.app",
-
-    messagingSenderId:
-    "676529713314",
-
-    appId:
-    "1:676529713314:web:3e127ae463d68a250a27fb",
-
-    measurementId:
-    "G-BK85KK19FG"
+    apiKey: "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
+    authDomain: "janken-game-69aa6.firebaseapp.com",
+    projectId: "janken-game-69aa6",
+    storageBucket: "janken-game-69aa6.firebasestorage.app",
+    messagingSenderId: "676529713314",
+    appId: "1:676529713314:web:3e127ae463d68a250a27fb",
+    measurementId: "G-BK85KK19FG"
 };
 
 
-const app =
-    initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-const db =
-    getFirestore(app);
-
-
-// ==========================================
-// 匿名玩家 ID
-// ==========================================
 
 function getPlayerId() {
 
     let id =
-        sessionStorage.getItem(
-            "jankenPlayerId"
-        );
+        sessionStorage.getItem("jankenPlayerId");
 
     if (!id) {
 
         if (crypto.randomUUID) {
 
-            id =
-                "p_" +
-                crypto.randomUUID();
+            id = "p_" + crypto.randomUUID();
 
         } else {
 
@@ -269,13 +234,8 @@ function getPlayerId() {
 }
 
 
-const playerId =
-    getPlayerId();
+const playerId = getPlayerId();
 
-
-// ==========================================
-// 邀請房號
-// ==========================================
 
 const params =
     new URLSearchParams(
@@ -286,10 +246,6 @@ const invitedRoom =
     params.get("room");
 
 
-// ==========================================
-// 初始化邀請頁
-// ==========================================
-
 async function initializePage() {
 
     if (
@@ -298,6 +254,11 @@ async function initializePage() {
     ) {
         return;
     }
+
+
+    document
+    .getElementById("createArea")
+    .style.display = "none";
 
 
     try {
@@ -311,15 +272,7 @@ async function initializePage() {
 
 
         const roomSnap =
-            await getDoc(
-                roomRef
-            );
-
-
-        document
-        .getElementById("createArea")
-        .style.display =
-            "none";
+            await getDoc(roomRef);
 
 
         if (!roomSnap.exists()) {
@@ -353,7 +306,7 @@ async function initializePage() {
         ) {
 
             showClosed(
-                "房主已經關閉新玩家加入"
+                "房主已停止新玩家加入"
             );
 
             return;
@@ -362,14 +315,12 @@ async function initializePage() {
 
         document
         .getElementById("inviteArea")
-        .style.display =
-            "block";
+        .style.display = "block";
 
 
         document
         .getElementById("inviteRoomNumber")
-        .innerText =
-            invitedRoom;
+        .innerText = invitedRoom;
 
     }
 
@@ -384,40 +335,28 @@ async function initializePage() {
 }
 
 
-// ==========================================
-// 關閉畫面
-// ==========================================
-
 function showClosed(text) {
 
     document
     .getElementById("createArea")
-    .style.display =
-        "none";
+    .style.display = "none";
 
 
     document
     .getElementById("inviteArea")
-    .style.display =
-        "none";
+    .style.display = "none";
 
 
     document
     .getElementById("closedArea")
-    .style.display =
-        "block";
+    .style.display = "block";
 
 
     document
-    .querySelector("#closedArea p")
-    .innerText =
-        text;
+    .getElementById("closedText")
+    .innerText = text;
 }
 
-
-// ==========================================
-// 房號
-// ==========================================
 
 function generateRoomCode() {
 
@@ -428,10 +367,6 @@ function generateRoomCode() {
 }
 
 
-// ==========================================
-// 建立遊戲
-// ==========================================
-
 window.createRoom =
 async function() {
 
@@ -441,10 +376,11 @@ async function() {
         .value
         .trim();
 
+
     if (!nickname) {
 
         alert(
-            "請輸入匿名暱稱"
+            "請輸入房主暱稱"
         );
 
         return;
@@ -464,9 +400,7 @@ async function() {
             );
 
         let roomSnap =
-            await getDoc(
-                roomRef
-            );
+            await getDoc(roomRef);
 
 
         while (
@@ -484,9 +418,7 @@ async function() {
                 );
 
             roomSnap =
-                await getDoc(
-                    roomRef
-                );
+                await getDoc(roomRef);
         }
 
 
@@ -496,6 +428,9 @@ async function() {
 
                 hostId:
                     playerId,
+
+                hostNickname:
+                    nickname,
 
                 status:
                     "playing",
@@ -512,23 +447,8 @@ async function() {
                 createdAt:
                     serverTimestamp(),
 
-                players: {
-
-                    [playerId]: {
-
-                        nickname:
-                            nickname,
-
-                        status:
-                            "active",
-
-                        choice:
-                            null,
-
-                        ready:
-                            false
-                    }
-                }
+                players:
+                    {}
             }
         );
 
@@ -562,10 +482,6 @@ async function() {
 };
 
 
-// ==========================================
-// 加入遊戲
-// ==========================================
-
 window.joinRoom =
 async function() {
 
@@ -574,6 +490,7 @@ async function() {
         .getElementById("playerNickname")
         .value
         .trim();
+
 
     if (!nickname) {
 
@@ -628,12 +545,11 @@ async function() {
 
 
                 if (
-                    data.status ===
-                    "finished"
+                    data.status === "finished"
                 ) {
 
                     throw new Error(
-                        "這場遊戲已經結束"
+                        "這場遊戲已結束"
                     );
                 }
 
@@ -643,7 +559,6 @@ async function() {
                 };
 
 
-                // 已經加入過的玩家可以回來
                 const alreadyJoined =
                     !!players[playerId];
 

@@ -190,7 +190,6 @@
             等待玩家...
         </div>
 
-        <!-- 測試工具 -->
         <div class="test-area">
 
             <div class="test-title">
@@ -237,6 +236,15 @@
         </div>
 
         <div id="result"></div>
+
+        <button
+            id="restartBtn"
+            class="normal-btn"
+            onclick="restartGame()"
+            style="display:none; margin-top:20px;"
+        >
+            🔄 再玩一局
+        </button>
 
     </div>
 
@@ -877,6 +885,14 @@
             }
 
 
+            if (players["test-player"].ready) {
+
+                alert("測試玩家已經出拳");
+                return;
+
+            }
+
+
             const choices = [
                 "rock",
                 "scissors",
@@ -1028,7 +1044,6 @@
             ];
 
 
-        // 全部相同，或三種拳都有
         if (
             choices.length === 1 ||
             choices.length === 3
@@ -1103,11 +1118,111 @@
 
 
         document
+        .getElementById("restartBtn")
+        .style.display =
+            "inline-block";
+
+
+        document
         .getElementById("status")
         .innerText =
             "🎉 本局已完成";
 
     }
+
+
+    // ===============================
+    // 再玩一局
+    // ===============================
+
+    window.restartGame = async function() {
+
+        if (!currentRoom) {
+            return;
+        }
+
+
+        try {
+
+            const roomRef =
+                doc(db, "rooms", currentRoom);
+
+
+            const roomSnap =
+                await getDoc(roomRef);
+
+
+            if (!roomSnap.exists()) {
+                return;
+            }
+
+
+            const data =
+                roomSnap.data();
+
+
+            const players =
+                data.players || {};
+
+
+            Object.keys(players)
+            .forEach(id => {
+
+                players[id].choice = null;
+                players[id].ready = false;
+
+            });
+
+
+            await updateDoc(roomRef, {
+
+                players:
+                    players,
+
+                status:
+                    "waiting"
+
+            });
+
+
+            document
+            .getElementById("result")
+            .innerHTML =
+                "";
+
+
+            document
+            .getElementById("restartBtn")
+            .style.display =
+                "none";
+
+
+            document
+            .querySelectorAll(".choice")
+            .forEach(button => {
+
+                button.disabled = false;
+
+            });
+
+
+            document
+            .getElementById("status")
+            .innerText =
+                "🔄 新的一局開始！請出拳";
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "重新開始失敗：" +
+                error.message
+            );
+
+        }
+
+    };
 
 
     // 啟動 LINE

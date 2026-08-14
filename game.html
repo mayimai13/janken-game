@@ -68,6 +68,15 @@ button {
     background: #1687ff;
 }
 
+.close-join-btn {
+    background: #ff9800;
+}
+
+.closed-join-btn {
+    background: #888;
+    cursor: default;
+}
+
 .end-round-btn {
     background: #e53935;
 }
@@ -161,6 +170,12 @@ button {
     color: #888;
 }
 
+.join-status {
+    margin-top: 10px;
+    font-size: 14px;
+    color: #777;
+}
+
 </style>
 
 </head>
@@ -197,6 +212,12 @@ button {
     </button>
 
     <div id="copyMessage"></div>
+
+    <div
+        id="joinStatus"
+        class="join-status">
+        🟢 開放加入
+    </div>
 
 </div>
 
@@ -275,6 +296,16 @@ button {
 
 
         <button
+            id="closeJoinBtn"
+            class="close-join-btn"
+            onclick="closeJoining()">
+
+            🔒 結束加入
+
+        </button>
+
+
+        <button
             id="endRoundBtn"
             class="end-round-btn"
             onclick="endRound()">
@@ -330,7 +361,6 @@ import {
 
     getFirestore,
     doc,
-    getDoc,
     onSnapshot,
     runTransaction
 
@@ -490,6 +520,9 @@ onSnapshot(
         );
 
 
+        updateJoinStatus();
+
+
         document
         .getElementById(
             "roundNumber"
@@ -565,6 +598,165 @@ onSnapshot(
     }
 
 );
+
+
+// ==========================================
+// 加入狀態
+// ==========================================
+
+function updateJoinStatus() {
+
+    const joinOpen =
+        roomData.joinOpen !==
+        false;
+
+
+    document
+    .getElementById(
+        "joinStatus"
+    )
+    .innerText =
+        joinOpen
+        ? "🟢 開放加入"
+        : "🔒 已停止加入";
+
+
+    if (!isHost) {
+
+        return;
+    }
+
+
+    const button =
+        document
+        .getElementById(
+            "closeJoinBtn"
+        );
+
+
+    if (
+        joinOpen
+    ) {
+
+        button.disabled =
+            false;
+
+        button.innerText =
+            "🔒 結束加入";
+
+        button.className =
+            "close-join-btn";
+
+    }
+
+    else {
+
+        button.disabled =
+            true;
+
+        button.innerText =
+            "🔒 已停止加入";
+
+        button.className =
+            "closed-join-btn";
+
+    }
+
+}
+
+
+// ==========================================
+// 房主停止加入
+// ==========================================
+
+window.closeJoining =
+async function() {
+
+
+    if (
+        !isHost
+    ) {
+
+        return;
+    }
+
+
+    const confirmClose =
+        confirm(
+            "確定要停止新玩家加入嗎？\n\n已經在房間裡的人不受影響。"
+        );
+
+
+    if (
+        !confirmClose
+    ) {
+
+        return;
+    }
+
+
+    try {
+
+        await runTransaction(
+
+            db,
+
+            async transaction => {
+
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                if (
+                    !snapshot.exists()
+                ) {
+
+                    throw new Error(
+                        "房間不存在"
+                    );
+                }
+
+
+                const data =
+                    snapshot.data();
+
+
+                if (
+                    data.hostId !==
+                    playerId
+                ) {
+
+                    throw new Error(
+                        "只有房主可以停止加入"
+                    );
+                }
+
+
+                transaction.update(
+                    roomRef,
+                    {
+                        joinOpen:
+                            false
+                    }
+                );
+
+            }
+
+        );
+
+    }
+
+    catch(error) {
+
+        alert(
+            error.message
+        );
+
+    }
+
+};
 
 
 // ==========================================
@@ -984,10 +1176,7 @@ async function() {
                     ];
 
 
-                // =================================
                 // 有明確輸贏
-                // =================================
-
                 if (
                     choices.length ===
                     2
@@ -1059,11 +1248,6 @@ async function() {
                     );
 
                 }
-
-
-                // 沒出拳的人本輪不淘汰
-                // 三種都有 = 平手
-                // 全部相同 = 平手
 
 
                 transaction.update(

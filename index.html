@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>猜拳遊戲</title>
 
     <style>
@@ -23,9 +24,15 @@
             font-size: 32px;
         }
 
+        #userInfo {
+            margin: 20px 0;
+            font-size: 18px;
+            color: #555;
+        }
+
         .subtitle {
             color: #666;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
 
         .choices {
@@ -54,139 +61,299 @@
             transform: scale(0.95);
         }
 
+        .choice:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         #result {
-            margin-top: 40px;
-            font-size: 24px;
+            margin-top: 35px;
+            font-size: 22px;
             font-weight: bold;
         }
 
-        #userInfo {
-            margin-bottom: 25px;
-            color: #555;
-            font-size: 16px;
+        #status {
+            margin-top: 15px;
+            font-size: 15px;
+            color: #777;
         }
     </style>
 </head>
 
 <body>
 
-    <div class="container">
+<div class="container">
 
-        <h1>🎮 猜拳遊戲</h1>
+    <h1>🎮 猜拳遊戲</h1>
 
-        <div id="userInfo">
-            正在連接 LINE...
-        </div>
+    <div id="userInfo">
+        正在連接 LINE...
+    </div>
 
-        <div class="subtitle">
-            請選擇你的出拳
-        </div>
+    <div class="subtitle">
+        請選擇你的出拳
+    </div>
 
-        <div class="choices">
+    <div class="choices">
 
-            <button class="choice" onclick="choose('rock')">
-                ✊
-            </button>
+        <button class="choice" onclick="choose('rock')" disabled>
+            ✊
+        </button>
 
-            <button class="choice" onclick="choose('scissors')">
-                ✌️
-            </button>
+        <button class="choice" onclick="choose('scissors')" disabled>
+            ✌️
+        </button>
 
-            <button class="choice" onclick="choose('paper')">
-                🖐️
-            </button>
-
-        </div>
-
-        <div id="result">
-            等待出拳...
-        </div>
+        <button class="choice" onclick="choose('paper')" disabled>
+            🖐️
+        </button>
 
     </div>
 
+    <div id="result">
+        等待出拳...
+    </div>
 
-    <!-- LINE LIFF SDK -->
-    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <div id="status"></div>
 
-    <script>
+</div>
 
-        // ==============================
-        // 初始化 LINE LIFF
-        // ==============================
 
-        async function initializeLiff() {
+<!-- LINE LIFF SDK -->
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
-            try {
 
-                await liff.init({
-                    liffId: "2011114180-glOZVk21"
-                });
+<!-- Firebase + 遊戲程式 -->
+<script type="module">
 
-                console.log("LIFF 初始化成功");
+    // ==========================================
+    // Firebase
+    // ==========================================
 
-                // 如果還沒登入 LINE
-                if (!liff.isLoggedIn()) {
+    import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
-                    liff.login();
-                    return;
+    import {
+        getFirestore,
+        collection,
+        addDoc,
+        serverTimestamp
+    }
+    from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+
+    // ==========================================
+    // Firebase 設定
+    // ==========================================
+
+    const firebaseConfig = {
+
+        apiKey: "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
+
+        authDomain:
+        "janken-game-69aa6.firebaseapp.com",
+
+        projectId:
+        "janken-game-69aa6",
+
+        storageBucket:
+        "janken-game-69aa6.firebasestorage.app",
+
+        messagingSenderId:
+        "676529713314",
+
+        appId:
+        "1:676529713314:web:3e127ae463d68a250a27fb",
+
+        measurementId:
+        "G-BK85KK19FG"
+
+    };
+
+
+    // 啟動 Firebase
+    const app = initializeApp(firebaseConfig);
+
+    // 啟動 Firestore
+    const db = getFirestore(app);
+
+
+    // ==========================================
+    // 玩家資料
+    // ==========================================
+
+    let currentUser = null;
+
+
+    // ==========================================
+    // 初始化 LINE LIFF
+    // ==========================================
+
+    async function initializeLiff() {
+
+        try {
+
+            await liff.init({
+                liffId: "2011114180-glOZVk21"
+            });
+
+            console.log("LIFF 初始化成功");
+
+            if (!liff.isLoggedIn()) {
+
+                liff.login();
+
+                return;
+            }
+
+
+            // 取得 LINE 玩家資料
+            const profile = await liff.getProfile();
+
+            currentUser = profile;
+
+
+            document.getElementById("userInfo").innerText =
+                "👋 " + profile.displayName + "，歡迎來玩！";
+
+
+            document.getElementById("status").innerText =
+                "LINE 與 Firebase 已連線";
+
+
+            // LINE 登入完成才開放出拳
+            document.querySelectorAll(".choice").forEach(button => {
+                button.disabled = false;
+            });
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            document.getElementById("userInfo").innerText =
+                "❌ LINE 連線失敗";
+
+            document.getElementById("status").innerText =
+                error.message;
+
+        }
+
+    }
+
+
+    // ==========================================
+    // 出拳
+    // ==========================================
+
+    window.choose = async function(choice) {
+
+        if (!currentUser) {
+
+            alert("LINE 玩家資料尚未載入");
+
+            return;
+        }
+
+
+        let choiceText = "";
+        let emoji = "";
+
+
+        if (choice === "rock") {
+
+            choiceText = "石頭";
+            emoji = "✊";
+
+        }
+
+
+        if (choice === "scissors") {
+
+            choiceText = "剪刀";
+            emoji = "✌️";
+
+        }
+
+
+        if (choice === "paper") {
+
+            choiceText = "布";
+            emoji = "🖐️";
+
+        }
+
+
+        document.getElementById("result").innerText =
+            "你出了 " + emoji + " " + choiceText;
+
+
+        document.getElementById("status").innerText =
+            "正在送出你的出拳...";
+
+
+        try {
+
+            // ==================================
+            // 寫入 Firestore
+            // ==================================
+
+            const docRef = await addDoc(
+
+                collection(db, "moves"),
+
+                {
+
+                    userId:
+                        currentUser.userId,
+
+                    displayName:
+                        currentUser.displayName,
+
+                    choice:
+                        choice,
+
+                    choiceText:
+                        choiceText,
+
+                    createdAt:
+                        serverTimestamp()
 
                 }
 
-                // 已登入，取得 LINE 使用者資料
-                const profile = await liff.getProfile();
-
-                console.log(profile);
-
-                document.getElementById("userInfo").innerText =
-                    "👋 " + profile.displayName + "，歡迎來玩！";
-
-            } catch (error) {
-
-                console.error("LIFF 初始化失敗：", error);
-
-                document.getElementById("userInfo").innerText =
-                    "LINE 連線失敗，請重新整理頁面";
-
-            }
-
-        }
+            );
 
 
-        // ==============================
-        // 猜拳按鈕
-        // ==============================
+            console.log(
+                "Firestore document ID:",
+                docRef.id
+            );
 
-        function choose(choice) {
 
-            let text = "";
+            document.getElementById("status").innerText =
+                "✅ 出拳成功！資料已送出";
 
-            if (choice === "rock") {
 
-                text = "你出了 ✊ 石頭";
+        } catch (error) {
 
-            }
+            console.error(error);
 
-            if (choice === "scissors") {
 
-                text = "你出了 ✌️ 剪刀";
-
-            }
-
-            if (choice === "paper") {
-
-                text = "你出了 🖐️ 布";
-
-            }
-
-            document.getElementById("result").innerText = text;
+            document.getElementById("status").innerText =
+                "❌ 出拳資料寫入失敗：" + error.message;
 
         }
 
+    };
 
-        // 啟動 LIFF
-        initializeLiff();
 
-    </script>
+    // ==========================================
+    // 啟動
+    // ==========================================
+
+    initializeLiff();
+
+</script>
 
 </body>
 </html>

@@ -1,12 +1,19 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
 <title>匿名猜拳淘汰賽</title>
 
 <style>
+
 body {
     margin: 0;
     font-family: Arial, "Microsoft JhengHei", sans-serif;
@@ -87,7 +94,9 @@ button {
 .closed-icon {
     font-size: 55px;
 }
+
 </style>
+
 </head>
 
 <body>
@@ -100,9 +109,19 @@ button {
 淘汰制猜拳大賽
 </div>
 
-<div id="createArea" class="card">
 
-<h2>👑 建立猜拳遊戲</h2>
+<!-- ============================== -->
+<!-- 房主建立遊戲 -->
+<!-- ============================== -->
+
+<div
+    id="createArea"
+    class="card"
+>
+
+<h2>
+👑 建立猜拳遊戲
+</h2>
 
 <input
     id="hostNickname"
@@ -115,22 +134,37 @@ button {
 </p>
 
 <button onclick="createRoom()">
+
 🎮 建立遊戲
+
 </button>
 
 </div>
 
 
-<div id="inviteArea" class="card">
+<!-- ============================== -->
+<!-- 玩家加入 -->
+<!-- ============================== -->
 
-<h2>🎟️ 加入猜拳遊戲</h2>
+<div
+    id="inviteArea"
+    class="card"
+>
 
-<div>房間號碼</div>
+<h2>
+🎟️ 加入猜拳遊戲
+</h2>
+
+<div>
+房間號碼
+</div>
 
 <div
     id="inviteRoomNumber"
-    class="room-number">
+    class="room-number"
+>
 </div>
+
 
 <input
     id="playerNickname"
@@ -138,29 +172,47 @@ button {
     placeholder="輸入你的匿名暱稱"
 >
 
+
 <p class="hint">
 輸入匿名暱稱即可參賽
 </p>
 
+
 <button
     class="join-btn"
-    onclick="joinRoom()">
+    onclick="joinRoom()"
+>
+
 🚪 加入遊戲
+
 </button>
 
 </div>
 
 
-<div id="closedArea" class="card">
+<!-- ============================== -->
+<!-- 已停止加入 -->
+<!-- ============================== -->
+
+<div
+    id="closedArea"
+    class="card"
+>
 
 <div class="closed-icon">
+
 🔒
+
 </div>
 
-<h2>無法加入</h2>
+<h2>
+無法加入
+</h2>
 
 <p id="closedText">
+
 此房間已停止加入
+
 </p>
 
 </div>
@@ -170,51 +222,94 @@ button {
 
 <script type="module">
 
+
 import {
     initializeApp
 }
 from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
+
 import {
+
     getFirestore,
     doc,
     getDoc,
     setDoc,
     runTransaction,
     serverTimestamp
+
 }
 from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
+// ==========================================
+// Firebase
+// ==========================================
+
 const firebaseConfig = {
-    apiKey: "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
-    authDomain: "janken-game-69aa6.firebaseapp.com",
-    projectId: "janken-game-69aa6",
-    storageBucket: "janken-game-69aa6.firebasestorage.app",
-    messagingSenderId: "676529713314",
-    appId: "1:676529713314:web:3e127ae463d68a250a27fb",
-    measurementId: "G-BK85KK19FG"
+
+    apiKey:
+    "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
+
+    authDomain:
+    "janken-game-69aa6.firebaseapp.com",
+
+    projectId:
+    "janken-game-69aa6",
+
+    storageBucket:
+    "janken-game-69aa6.firebasestorage.app",
+
+    messagingSenderId:
+    "676529713314",
+
+    appId:
+    "1:676529713314:web:3e127ae463d68a250a27fb",
+
+    measurementId:
+    "G-BK85KK19FG"
+
 };
 
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app =
+    initializeApp(
+        firebaseConfig
+    );
 
+
+const db =
+    getFirestore(
+        app
+    );
+
+
+// ==========================================
+// 每個瀏覽工作階段自己的匿名 ID
+// ==========================================
 
 function getPlayerId() {
 
     let id =
-        sessionStorage.getItem("jankenPlayerId");
+        sessionStorage
+        .getItem(
+            "jankenPlayerId"
+        );
+
 
     if (!id) {
 
-        if (crypto.randomUUID) {
+        if (
+            crypto.randomUUID
+        ) {
 
             id =
                 "p_" +
                 crypto.randomUUID();
 
-        } else {
+        }
+
+        else {
 
             id =
                 "p_" +
@@ -223,15 +318,21 @@ function getPlayerId() {
                 Math.random()
                 .toString(36)
                 .substring(2);
+
         }
 
-        sessionStorage.setItem(
+
+        sessionStorage
+        .setItem(
             "jankenPlayerId",
             id
         );
+
     }
 
+
     return id;
+
 }
 
 
@@ -239,27 +340,44 @@ const playerId =
     getPlayerId();
 
 
+// ==========================================
+// 取得邀請房號
+// ==========================================
+
 const params =
     new URLSearchParams(
         window.location.search
     );
 
-const invitedRoom =
-    params.get("room");
 
+const invitedRoom =
+    params.get(
+        "room"
+    );
+
+
+// ==========================================
+// 初始化邀請頁
+// ==========================================
 
 async function initializePage() {
 
     if (
         !invitedRoom ||
-        !/^\d{4}$/.test(invitedRoom)
+        !/^\d{4}$/.test(
+            invitedRoom
+        )
     ) {
+
         return;
+
     }
 
 
     document
-    .getElementById("createArea")
+    .getElementById(
+        "createArea"
+    )
     .style.display =
         "none";
 
@@ -280,13 +398,16 @@ async function initializePage() {
             );
 
 
-        if (!roomSnap.exists()) {
+        if (
+            !roomSnap.exists()
+        ) {
 
             showClosed(
                 "找不到這個房間"
             );
 
             return;
+
         }
 
 
@@ -304,6 +425,7 @@ async function initializePage() {
             );
 
             return;
+
         }
 
 
@@ -317,17 +439,22 @@ async function initializePage() {
             );
 
             return;
+
         }
 
 
         document
-        .getElementById("inviteArea")
+        .getElementById(
+            "inviteArea"
+        )
         .style.display =
             "block";
 
 
         document
-        .getElementById("inviteRoomNumber")
+        .getElementById(
+            "inviteRoomNumber"
+        )
         .innerText =
             invitedRoom;
 
@@ -335,57 +462,90 @@ async function initializePage() {
 
     catch(error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         showClosed(
             "讀取房間失敗"
         );
+
     }
+
 }
 
 
-function showClosed(text) {
+// ==========================================
+// 顯示無法加入
+// ==========================================
+
+function showClosed(
+    text
+) {
 
     document
-    .getElementById("createArea")
+    .getElementById(
+        "createArea"
+    )
     .style.display =
         "none";
 
 
     document
-    .getElementById("inviteArea")
+    .getElementById(
+        "inviteArea"
+    )
     .style.display =
         "none";
 
 
     document
-    .getElementById("closedArea")
+    .getElementById(
+        "closedArea"
+    )
     .style.display =
         "block";
 
 
     document
-    .getElementById("closedText")
+    .getElementById(
+        "closedText"
+    )
     .innerText =
         text;
+
 }
 
+
+// ==========================================
+// 產生房號
+// ==========================================
 
 function generateRoomCode() {
 
     return Math.floor(
         1000 +
-        Math.random() * 9000
-    ).toString();
+        Math.random() *
+        9000
+    )
+    .toString();
+
 }
 
+
+// ==========================================
+// 房主建立遊戲
+// ==========================================
 
 window.createRoom =
 async function() {
 
     const nickname =
         document
-        .getElementById("hostNickname")
+        .getElementById(
+            "hostNickname"
+        )
         .value
         .trim();
 
@@ -397,6 +557,7 @@ async function() {
         );
 
         return;
+
     }
 
 
@@ -405,6 +566,7 @@ async function() {
         let roomCode =
             generateRoomCode();
 
+
         let roomRef =
             doc(
                 db,
@@ -412,8 +574,11 @@ async function() {
                 roomCode
             );
 
+
         let roomSnap =
-            await getDoc(roomRef);
+            await getDoc(
+                roomRef
+            );
 
 
         while (
@@ -423,6 +588,7 @@ async function() {
             roomCode =
                 generateRoomCode();
 
+
             roomRef =
                 doc(
                     db,
@@ -430,15 +596,19 @@ async function() {
                     roomCode
                 );
 
+
             roomSnap =
                 await getDoc(
                     roomRef
                 );
+
         }
 
 
         await setDoc(
+
             roomRef,
+
             {
 
                 hostId:
@@ -456,7 +626,6 @@ async function() {
                 round:
                     1,
 
-                // 先等待房主正式開始
                 roundStatus:
                     "waiting",
 
@@ -465,18 +634,30 @@ async function() {
 
                 players:
                     {}
+
             }
+
         );
 
 
-        sessionStorage.setItem(
+        sessionStorage
+        .setItem(
             "jankenNickname",
             nickname
         );
 
-        sessionStorage.setItem(
+
+        sessionStorage
+        .setItem(
             "jankenRoom",
             roomCode
+        );
+
+
+        sessionStorage
+        .setItem(
+            "jankenRole",
+            "host"
         );
 
 
@@ -488,22 +669,33 @@ async function() {
 
     catch(error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         alert(
             "建立遊戲失敗：" +
             error.message
         );
+
     }
+
 };
 
+
+// ==========================================
+// 玩家加入
+// ==========================================
 
 window.joinRoom =
 async function() {
 
     const nickname =
         document
-        .getElementById("playerNickname")
+        .getElementById(
+            "playerNickname"
+        )
         .value
         .trim();
 
@@ -515,6 +707,7 @@ async function() {
         );
 
         return;
+
     }
 
 
@@ -525,6 +718,7 @@ async function() {
         );
 
         return;
+
     }
 
 
@@ -539,8 +733,11 @@ async function() {
     try {
 
         await runTransaction(
+
             db,
+
             async transaction => {
+
 
                 const snapshot =
                     await transaction.get(
@@ -548,11 +745,14 @@ async function() {
                     );
 
 
-                if (!snapshot.exists()) {
+                if (
+                    !snapshot.exists()
+                ) {
 
                     throw new Error(
                         "找不到這個遊戲"
                     );
+
                 }
 
 
@@ -568,70 +768,106 @@ async function() {
                     throw new Error(
                         "這場遊戲已結束"
                     );
+
                 }
 
 
                 const players = {
-                    ...(data.players || {})
+
+                    ...(
+                        data.players ||
+                        {}
+                    )
+
                 };
 
 
                 const alreadyJoined =
-                    !!players[playerId];
+                    !!players[
+                        playerId
+                    ];
 
 
                 if (
-                    data.joinOpen === false &&
+                    data.joinOpen ===
+                    false &&
                     !alreadyJoined
                 ) {
 
                     throw new Error(
                         "此房間已停止加入"
                     );
+
                 }
 
 
-                players[playerId] = {
+                players[
+                    playerId
+                ] = {
 
                     nickname:
                         nickname,
 
                     status:
                         alreadyJoined
-                        ? players[playerId].status
+                        ? players[
+                            playerId
+                          ].status
                         : "active",
 
                     choice:
                         alreadyJoined
-                        ? players[playerId].choice
+                        ? players[
+                            playerId
+                          ].choice
                         : null,
 
                     ready:
                         alreadyJoined
-                        ? players[playerId].ready
+                        ? players[
+                            playerId
+                          ].ready
                         : false
+
                 };
 
 
                 transaction.update(
+
                     roomRef,
+
                     {
+
                         players:
                             players
+
                     }
+
                 );
+
             }
+
         );
 
 
-        sessionStorage.setItem(
+        sessionStorage
+        .setItem(
             "jankenNickname",
             nickname
         );
 
-        sessionStorage.setItem(
+
+        sessionStorage
+        .setItem(
             "jankenRoom",
             invitedRoom
+        );
+
+
+        sessionStorage
+        .setItem(
+            "jankenRole",
+            "player"
         );
 
 
@@ -643,12 +879,17 @@ async function() {
 
     catch(error) {
 
-        console.error(error);
+        console.error(
+            error
+        );
+
 
         alert(
             error.message
         );
+
     }
+
 };
 
 
@@ -657,4 +898,5 @@ initializePage();
 </script>
 
 </body>
+
 </html>

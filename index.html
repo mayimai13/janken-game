@@ -43,6 +43,7 @@
             box-shadow: 0 3px 10px rgba(0,0,0,0.15);
             cursor: pointer;
             font-size: 50px;
+            transition: 0.15s;
         }
 
         .choice:hover {
@@ -58,6 +59,12 @@
             font-size: 24px;
             font-weight: bold;
         }
+
+        #userInfo {
+            margin-bottom: 25px;
+            color: #555;
+            font-size: 16px;
+        }
     </style>
 </head>
 
@@ -66,6 +73,10 @@
     <div class="container">
 
         <h1>🎮 猜拳遊戲</h1>
+
+        <div id="userInfo">
+            正在連接 LINE...
+        </div>
 
         <div class="subtitle">
             請選擇你的出拳
@@ -93,26 +104,87 @@
 
     </div>
 
+
+    <!-- LINE LIFF SDK -->
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
     <script>
+
+        // ==============================
+        // 初始化 LINE LIFF
+        // ==============================
+
+        async function initializeLiff() {
+
+            try {
+
+                await liff.init({
+                    liffId: "2011114180-glOZVk21"
+                });
+
+                console.log("LIFF 初始化成功");
+
+                // 如果還沒登入 LINE
+                if (!liff.isLoggedIn()) {
+
+                    liff.login();
+                    return;
+
+                }
+
+                // 已登入，取得 LINE 使用者資料
+                const profile = await liff.getProfile();
+
+                console.log(profile);
+
+                document.getElementById("userInfo").innerText =
+                    "👋 " + profile.displayName + "，歡迎來玩！";
+
+            } catch (error) {
+
+                console.error("LIFF 初始化失敗：", error);
+
+                document.getElementById("userInfo").innerText =
+                    "LINE 連線失敗，請重新整理頁面";
+
+            }
+
+        }
+
+
+        // ==============================
+        // 猜拳按鈕
+        // ==============================
 
         function choose(choice) {
 
             let text = "";
 
             if (choice === "rock") {
+
                 text = "你出了 ✊ 石頭";
+
             }
 
             if (choice === "scissors") {
+
                 text = "你出了 ✌️ 剪刀";
+
             }
 
             if (choice === "paper") {
+
                 text = "你出了 🖐️ 布";
+
             }
 
             document.getElementById("result").innerText = text;
+
         }
+
+
+        // 啟動 LIFF
+        initializeLiff();
 
     </script>
 

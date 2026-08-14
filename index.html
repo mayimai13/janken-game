@@ -100,7 +100,6 @@ button {
 淘汰制猜拳大賽
 </div>
 
-
 <div id="createArea" class="card">
 
 <h2>👑 建立猜拳遊戲</h2>
@@ -211,7 +210,9 @@ function getPlayerId() {
 
         if (crypto.randomUUID) {
 
-            id = "p_" + crypto.randomUUID();
+            id =
+                "p_" +
+                crypto.randomUUID();
 
         } else {
 
@@ -234,7 +235,8 @@ function getPlayerId() {
 }
 
 
-const playerId = getPlayerId();
+const playerId =
+    getPlayerId();
 
 
 const params =
@@ -258,7 +260,8 @@ async function initializePage() {
 
     document
     .getElementById("createArea")
-    .style.display = "none";
+    .style.display =
+        "none";
 
 
     try {
@@ -272,7 +275,9 @@ async function initializePage() {
 
 
         const roomSnap =
-            await getDoc(roomRef);
+            await getDoc(
+                roomRef
+            );
 
 
         if (!roomSnap.exists()) {
@@ -290,7 +295,8 @@ async function initializePage() {
 
 
         if (
-            data.status === "finished"
+            data.status ===
+            "finished"
         ) {
 
             showClosed(
@@ -302,7 +308,8 @@ async function initializePage() {
 
 
         if (
-            data.joinOpen === false
+            data.joinOpen ===
+            false
         ) {
 
             showClosed(
@@ -315,12 +322,14 @@ async function initializePage() {
 
         document
         .getElementById("inviteArea")
-        .style.display = "block";
+        .style.display =
+            "block";
 
 
         document
         .getElementById("inviteRoomNumber")
-        .innerText = invitedRoom;
+        .innerText =
+            invitedRoom;
 
     }
 
@@ -339,22 +348,26 @@ function showClosed(text) {
 
     document
     .getElementById("createArea")
-    .style.display = "none";
+    .style.display =
+        "none";
 
 
     document
     .getElementById("inviteArea")
-    .style.display = "none";
+    .style.display =
+        "none";
 
 
     document
     .getElementById("closedArea")
-    .style.display = "block";
+    .style.display =
+        "block";
 
 
     document
     .getElementById("closedText")
-    .innerText = text;
+    .innerText =
+        text;
 }
 
 
@@ -418,7 +431,9 @@ async function() {
                 );
 
             roomSnap =
-                await getDoc(roomRef);
+                await getDoc(
+                    roomRef
+                );
         }
 
 
@@ -441,8 +456,9 @@ async function() {
                 round:
                     1,
 
+                // 先等待房主正式開始
                 roundStatus:
-                    "playing",
+                    "waiting",
 
                 createdAt:
                     serverTimestamp(),
@@ -545,7 +561,8 @@ async function() {
 
 
                 if (
-                    data.status === "finished"
+                    data.status ===
+                    "finished"
                 ) {
 
                     throw new Error(

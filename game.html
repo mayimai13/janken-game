@@ -73,12 +73,16 @@ button {
     cursor: default;
 }
 
+.start-btn {
+    background: #06c755;
+}
+
 .end-round-btn {
     background: #e53935;
 }
 
 .next-btn {
-    background: #06c755;
+    background: #7b61ff;
 }
 
 .choice-area {
@@ -122,6 +126,8 @@ button {
     border-top: 1px solid #eee;
 }
 
+#startRoundBtn,
+#endRoundBtn,
 #nextRoundBtn {
     display: none;
 }
@@ -167,6 +173,11 @@ button {
     margin-top: 20px;
 }
 
+.round-state {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
 </style>
 
 </head>
@@ -194,6 +205,12 @@ button {
     <div
         id="roundNumber"
         class="round">
+    </div>
+
+    <div
+        id="roundState"
+        class="round-state">
+        ⏳ 等待房主開始
     </div>
 
     <button
@@ -237,7 +254,7 @@ button {
     class="card">
 
     <h2 id="gameTitle">
-        請選擇你的出拳
+        等待房主開始猜拳
     </h2>
 
 
@@ -296,6 +313,16 @@ button {
 
 
         <button
+            id="startRoundBtn"
+            class="start-btn"
+            onclick="startRound()">
+
+            ▶️ 開始猜拳
+
+        </button>
+
+
+        <button
             id="endRoundBtn"
             class="end-round-btn"
             onclick="endRound()">
@@ -308,9 +335,9 @@ button {
         <button
             id="nextRoundBtn"
             class="next-btn"
-            onclick="nextRound()">
+            onclick="prepareNextRound()">
 
-            🔄 開始下一輪
+            🔄 準備下一輪
 
         </button>
 
@@ -418,8 +445,11 @@ const roomRef =
     );
 
 
-let roomData = null;
-let isHost = false;
+let roomData =
+    null;
+
+let isHost =
+    false;
 
 
 document
@@ -427,6 +457,10 @@ document
 .innerText =
     roomCode;
 
+
+// ==========================================
+// 即時監聽
+// ==========================================
 
 onSnapshot(
 
@@ -471,7 +505,15 @@ onSnapshot(
         updateJoinStatus();
 
 
+        updateRoundState();
+
+
         updateGame(
+            players
+        );
+
+
+        updateHostControls(
             players
         );
 
@@ -508,22 +550,8 @@ onSnapshot(
 
             document
             .getElementById("result")
-            .innerHTML = "";
-
-
-            if (isHost) {
-
-                document
-                .getElementById("endRoundBtn")
-                .style.display =
-                    "inline-block";
-
-
-                document
-                .getElementById("nextRoundBtn")
-                .style.display =
-                    "none";
-            }
+            .innerHTML =
+                "";
         }
 
 
@@ -535,6 +563,10 @@ onSnapshot(
 
 );
 
+
+// ==========================================
+// 加入狀態
+// ==========================================
 
 function updateJoinStatus() {
 
@@ -563,27 +595,202 @@ function updateJoinStatus() {
 
     if (joinOpen) {
 
-        button.disabled = false;
+        button.disabled =
+            false;
+
         button.innerText =
             "🔒 結束加入";
+
         button.className =
             "close-join-btn";
 
     } else {
 
-        button.disabled = true;
+        button.disabled =
+            true;
+
         button.innerText =
             "🔒 已停止加入";
+
         button.className =
             "closed-join-btn";
     }
 }
 
 
+// ==========================================
+// 輪次顯示
+// ==========================================
+
+function updateRoundState() {
+
+    const box =
+        document
+        .getElementById("roundState");
+
+
+    if (
+        roomData.roundStatus ===
+        "waiting"
+    ) {
+
+        box.innerText =
+            "⏳ 等待房主開始猜拳";
+
+    }
+
+    else if (
+        roomData.roundStatus ===
+        "playing"
+    ) {
+
+        box.innerText =
+            "🎮 猜拳進行中";
+
+    }
+
+    else if (
+        roomData.roundStatus ===
+        "ended"
+    ) {
+
+        box.innerText =
+            "🏁 本輪已結束";
+    }
+}
+
+
+// ==========================================
+// 房主按鈕狀態
+// ==========================================
+
+function updateHostControls(
+    players
+) {
+
+    if (!isHost) {
+        return;
+    }
+
+
+    const closeJoinBtn =
+        document
+        .getElementById(
+            "closeJoinBtn"
+        );
+
+
+    const startBtn =
+        document
+        .getElementById(
+            "startRoundBtn"
+        );
+
+
+    const endBtn =
+        document
+        .getElementById(
+            "endRoundBtn"
+        );
+
+
+    const nextBtn =
+        document
+        .getElementById(
+            "nextRoundBtn"
+        );
+
+
+    startBtn.style.display =
+        "none";
+
+    endBtn.style.display =
+        "none";
+
+    nextBtn.style.display =
+        "none";
+
+
+    // 還沒關閉加入
+    if (
+        roomData.joinOpen !==
+        false
+    ) {
+
+        return;
+    }
+
+
+    // 已停止加入，等待開始
+    if (
+        roomData.roundStatus ===
+        "waiting"
+    ) {
+
+        startBtn.style.display =
+            "inline-block";
+
+        return;
+    }
+
+
+    // 正在猜拳
+    if (
+        roomData.roundStatus ===
+        "playing"
+    ) {
+
+        endBtn.style.display =
+            "inline-block";
+
+        return;
+    }
+
+
+    // 本輪結束
+    if (
+        roomData.roundStatus ===
+        "ended"
+    ) {
+
+        nextBtn.style.display =
+            "inline-block";
+    }
+}
+
+
+// ==========================================
+// 停止加入
+// ==========================================
+
 window.closeJoining =
 async function() {
 
     if (!isHost) {
+        return;
+    }
+
+
+    const activeCount =
+        Object.values(
+            roomData.players || {}
+        )
+        .filter(
+            player =>
+                player.status ===
+                "active"
+        )
+        .length;
+
+
+    if (
+        activeCount < 2
+    ) {
+
+        alert(
+            "至少需要 2 位參賽玩家才能結束加入"
+        );
+
         return;
     }
 
@@ -638,6 +845,116 @@ async function() {
 };
 
 
+// ==========================================
+// 房主開始本輪
+// ==========================================
+
+window.startRound =
+async function() {
+
+    if (!isHost) {
+        return;
+    }
+
+
+    try {
+
+        await runTransaction(
+
+            db,
+
+            async transaction => {
+
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                const data =
+                    snapshot.data();
+
+
+                if (
+                    data.hostId !==
+                    playerId
+                ) {
+
+                    throw new Error(
+                        "只有房主可以開始猜拳"
+                    );
+                }
+
+
+                if (
+                    data.joinOpen !==
+                    false
+                ) {
+
+                    throw new Error(
+                        "請先按「結束加入」"
+                    );
+                }
+
+
+                if (
+                    data.roundStatus !==
+                    "waiting"
+                ) {
+
+                    throw new Error(
+                        "目前不能開始本輪"
+                    );
+                }
+
+
+                const activePlayers =
+                    Object.values(
+                        data.players || {}
+                    )
+                    .filter(
+                        player =>
+                            player.status ===
+                            "active"
+                    );
+
+
+                if (
+                    activePlayers.length <
+                    2
+                ) {
+
+                    throw new Error(
+                        "至少需要 2 位參賽玩家"
+                    );
+                }
+
+
+                transaction.update(
+                    roomRef,
+                    {
+                        roundStatus:
+                            "playing"
+                    }
+                );
+            }
+        );
+
+    }
+
+    catch(error) {
+
+        alert(
+            error.message
+        );
+    }
+};
+
+
+// ==========================================
+// 玩家列表
+// ==========================================
+
 function renderPlayers(
     players
 ) {
@@ -647,7 +964,8 @@ function renderPlayers(
         .getElementById("playerList");
 
 
-    list.innerHTML = "";
+    list.innerHTML =
+        "";
 
 
     const entries =
@@ -655,7 +973,8 @@ function renderPlayers(
 
 
     if (
-        entries.length === 0
+        entries.length ===
+        0
     ) {
 
         list.innerHTML =
@@ -682,7 +1001,8 @@ function renderPlayers(
 
 
             if (
-                id === playerId
+                id ===
+                playerId
             ) {
 
                 text +=
@@ -704,10 +1024,21 @@ function renderPlayers(
 
             } else {
 
-                text +=
-                    player.ready
-                    ? "　✅ 已出拳"
-                    : "　⏳ 尚未出拳";
+                if (
+                    roomData.roundStatus ===
+                    "playing"
+                ) {
+
+                    text +=
+                        player.ready
+                        ? "　✅ 已出拳"
+                        : "　⏳ 尚未出拳";
+
+                } else {
+
+                    text +=
+                        "　🎮 等待本輪";
+                }
             }
 
 
@@ -722,6 +1053,10 @@ function renderPlayers(
     );
 }
 
+
+// ==========================================
+// 玩家畫面
+// ==========================================
 
 function updateGame(
     players
@@ -753,16 +1088,6 @@ function updateGame(
 
     } else {
 
-        choiceArea.style.display =
-            "flex";
-
-
-        document
-        .getElementById("gameTitle")
-        .innerText =
-            "請選擇你的出拳";
-
-
         const me =
             players[
                 playerId
@@ -778,6 +1103,10 @@ function updateGame(
         }
 
 
+        choiceArea.style.display =
+            "flex";
+
+
         const buttons =
             document
             .querySelectorAll(
@@ -789,6 +1118,12 @@ function updateGame(
             me.status ===
             "spectator"
         ) {
+
+            document
+            .getElementById("gameTitle")
+            .innerText =
+                "👀 觀看模式";
+
 
             buttons.forEach(
                 button =>
@@ -802,7 +1137,9 @@ function updateGame(
             .style.display =
                 "block";
 
-        } else {
+        }
+
+        else {
 
             document
             .getElementById("spectatorMessage")
@@ -810,13 +1147,48 @@ function updateGame(
                 "none";
 
 
+            if (
+                roomData.roundStatus ===
+                "waiting"
+            ) {
+
+                document
+                .getElementById("gameTitle")
+                .innerText =
+                    "⏳ 等待房主開始猜拳";
+
+            }
+
+            else if (
+                roomData.roundStatus ===
+                "playing"
+            ) {
+
+                document
+                .getElementById("gameTitle")
+                .innerText =
+                    me.ready
+                    ? "✅ 你已出拳"
+                    : "請選擇你的出拳";
+
+            }
+
+            else {
+
+                document
+                .getElementById("gameTitle")
+                .innerText =
+                    "🏁 本輪已結束";
+            }
+
+
             buttons.forEach(
                 button => {
 
                     button.disabled =
                         me.ready ||
-                        roomData.roundStatus ===
-                        "ended";
+                        roomData.roundStatus !==
+                        "playing";
 
                 }
             );
@@ -843,16 +1215,35 @@ function updateGame(
         );
 
 
-    document
-    .getElementById("status")
-    .innerText =
-        "本輪已有 " +
-        readyPlayers.length +
-        " / " +
-        activePlayers.length +
-        " 位參賽者出拳";
+    if (
+        roomData.roundStatus ===
+        "playing"
+    ) {
+
+        document
+        .getElementById("status")
+        .innerText =
+            "本輪已有 " +
+            readyPlayers.length +
+            " / " +
+            activePlayers.length +
+            " 位參賽者出拳";
+
+    } else {
+
+        document
+        .getElementById("status")
+        .innerText =
+            "目前共有 " +
+            activePlayers.length +
+            " 位參賽者";
+    }
 }
 
+
+// ==========================================
+// 玩家出拳
+// ==========================================
 
 window.choose =
 async function(choice) {
@@ -880,6 +1271,17 @@ async function(choice) {
                     snapshot.data();
 
 
+                if (
+                    data.roundStatus !==
+                    "playing"
+                ) {
+
+                    throw new Error(
+                        "房主尚未開始猜拳"
+                    );
+                }
+
+
                 const players = {
                     ...(data.players || {})
                 };
@@ -904,8 +1306,7 @@ async function(choice) {
 
 
                 if (
-                    data.roundStatus ===
-                    "ended"
+                    me.ready
                 ) {
 
                     return;
@@ -947,6 +1348,10 @@ async function(choice) {
 };
 
 
+// ==========================================
+// 房主結束本輪
+// ==========================================
+
 window.endRound =
 async function() {
 
@@ -971,6 +1376,17 @@ async function() {
 
                 const data =
                     snapshot.data();
+
+
+                if (
+                    data.roundStatus !==
+                    "playing"
+                ) {
+
+                    throw new Error(
+                        "本輪尚未開始"
+                    );
+                }
 
 
                 const players = {
@@ -1010,8 +1426,10 @@ async function() {
                     ];
 
 
+                // 只有兩種拳時才有輸贏
                 if (
-                    choices.length === 2
+                    choices.length ===
+                    2
                 ) {
 
                     let winningChoice;
@@ -1090,6 +1508,10 @@ async function() {
 };
 
 
+// ==========================================
+// 顯示結果
+// ==========================================
+
 function showRoundResult(
     players
 ) {
@@ -1149,25 +1571,14 @@ function showRoundResult(
     .getElementById("result")
     .innerHTML =
         html;
-
-
-    if (isHost) {
-
-        document
-        .getElementById("endRoundBtn")
-        .style.display =
-            "none";
-
-
-        document
-        .getElementById("nextRoundBtn")
-        .style.display =
-            "inline-block";
-    }
 }
 
 
-window.nextRound =
+// ==========================================
+// 準備下一輪
+// ==========================================
+
+window.prepareNextRound =
 async function() {
 
     if (!isHost) {
@@ -1191,6 +1602,17 @@ async function() {
 
                 const data =
                     snapshot.data();
+
+
+                if (
+                    data.roundStatus !==
+                    "ended"
+                ) {
+
+                    throw new Error(
+                        "本輪尚未結束"
+                    );
+                }
 
 
                 const players = {
@@ -1229,8 +1651,9 @@ async function() {
                                 1
                             ) + 1,
 
+                        // 下一輪先等待房主開始
                         roundStatus:
-                            "playing"
+                            "waiting"
                     }
                 );
             }
@@ -1246,6 +1669,10 @@ async function() {
     }
 };
 
+
+// ==========================================
+// 最終勝者
+// ==========================================
 
 function checkFinalWinner(
     players
@@ -1291,7 +1718,7 @@ function checkFinalWinner(
         if (isHost) {
 
             document
-            .getElementById("nextRoundBtn")
+            .getElementById("startRoundBtn")
             .style.display =
                 "none";
 
@@ -1300,10 +1727,28 @@ function checkFinalWinner(
             .getElementById("endRoundBtn")
             .style.display =
                 "none";
+
+
+            document
+            .getElementById("nextRoundBtn")
+            .style.display =
+                "none";
         }
+    }
+
+    else {
+
+        document
+        .getElementById("winnerArea")
+        .style.display =
+            "none";
     }
 }
 
+
+// ==========================================
+// 分享
+// ==========================================
 
 window.copyInviteLink =
 async function() {
@@ -1353,4 +1798,4 @@ function escapeHtml(text) {
 </script>
 
 </body>
-</html>v
+</html>

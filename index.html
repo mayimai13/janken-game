@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>猜拳遊戲</title>
+    <title>LINE 多人猜拳</title>
 
     <style>
         body {
@@ -15,67 +14,108 @@
         }
 
         .container {
-            max-width: 500px;
+            max-width: 520px;
             margin: 0 auto;
-            padding: 40px 20px;
+            padding: 30px 20px 50px;
         }
 
         h1 {
-            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 18px;
+            padding: 22px;
+            margin-top: 20px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.12);
         }
 
         #userInfo {
-            margin: 20px 0;
-            font-size: 18px;
             color: #555;
+            margin-top: 10px;
         }
 
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
+        input {
+            width: 80%;
+            max-width: 260px;
+            padding: 12px;
+            font-size: 20px;
+            text-align: center;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+        }
+
+        .normal-btn {
+            padding: 12px 20px;
+            margin: 8px;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            cursor: pointer;
+            background: #06c755;
+            color: white;
+        }
+
+        .secondary-btn {
+            background: #555;
         }
 
         .choices {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            gap: 12px;
+            margin-top: 20px;
         }
 
         .choice {
-            width: 100px;
-            height: 120px;
+            width: 95px;
+            height: 115px;
             border: none;
-            border-radius: 20px;
+            border-radius: 18px;
             background: white;
             box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            font-size: 48px;
             cursor: pointer;
-            font-size: 50px;
-            transition: 0.15s;
-        }
-
-        .choice:hover {
-            transform: scale(1.05);
-        }
-
-        .choice:active {
-            transform: scale(0.95);
         }
 
         .choice:disabled {
-            opacity: 0.5;
+            opacity: 0.45;
             cursor: not-allowed;
         }
 
-        #result {
-            margin-top: 35px;
-            font-size: 22px;
+        #roomArea,
+        #gameArea {
+            display: none;
+        }
+
+        #roomCodeDisplay {
+            font-size: 32px;
             font-weight: bold;
+            letter-spacing: 5px;
+            margin: 10px 0;
+        }
+
+        #playerList {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .player-row {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
         }
 
         #status {
             margin-top: 15px;
+            color: #666;
             font-size: 15px;
-            color: #777;
+        }
+
+        #result {
+            margin-top: 22px;
+            font-size: 20px;
+            line-height: 1.8;
         }
     </style>
 </head>
@@ -84,71 +124,110 @@
 
 <div class="container">
 
-    <h1>🎮 猜拳遊戲</h1>
+    <h1>🎮 LINE 多人猜拳</h1>
 
     <div id="userInfo">
         正在連接 LINE...
     </div>
 
-    <div class="subtitle">
-        請選擇你的出拳
-    </div>
 
-    <div class="choices">
+    <!-- 房間首頁 -->
+    <div id="lobbyArea" class="card">
 
-        <button class="choice" onclick="choose('rock')" disabled>
-            ✊
+        <h2>開始遊戲</h2>
+
+        <button class="normal-btn" onclick="createRoom()">
+            建立房間
         </button>
 
-        <button class="choice" onclick="choose('scissors')" disabled>
-            ✌️
-        </button>
+        <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
 
-        <button class="choice" onclick="choose('paper')" disabled>
-            🖐️
+        <div>
+            <input
+                id="roomInput"
+                type="text"
+                maxlength="4"
+                placeholder="輸入 4 位房號"
+                inputmode="numeric"
+            >
+        </div>
+
+        <button class="normal-btn secondary-btn" onclick="joinRoom()">
+            加入房間
         </button>
 
     </div>
 
-    <div id="result">
-        等待出拳...
+
+    <!-- 房間畫面 -->
+    <div id="roomArea" class="card">
+
+        <div>房間號碼</div>
+
+        <div id="roomCodeDisplay"></div>
+
+        <div id="playerList"></div>
+
+        <div id="status">
+            等待玩家...
+        </div>
+
     </div>
 
-    <div id="status"></div>
+
+    <!-- 出拳區 -->
+    <div id="gameArea" class="card">
+
+        <h2>請選擇你的出拳</h2>
+
+        <div class="choices">
+
+            <button class="choice" onclick="choose('rock')">
+                ✊
+            </button>
+
+            <button class="choice" onclick="choose('scissors')">
+                ✌️
+            </button>
+
+            <button class="choice" onclick="choose('paper')">
+                🖐️
+            </button>
+
+        </div>
+
+        <div id="result"></div>
+
+    </div>
 
 </div>
 
 
-<!-- LINE LIFF SDK -->
+<!-- LINE LIFF -->
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 
 
-<!-- Firebase + 遊戲程式 -->
 <script type="module">
-
-    // ==========================================
-    // Firebase
-    // ==========================================
 
     import { initializeApp }
     from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
 
     import {
         getFirestore,
-        collection,
-        addDoc,
+        doc,
+        setDoc,
+        getDoc,
+        updateDoc,
+        onSnapshot,
         serverTimestamp
     }
     from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
-    // ==========================================
-    // Firebase 設定
-    // ==========================================
-
     const firebaseConfig = {
 
-        apiKey: "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
+        apiKey:
+        "AIzaSyBgIL1m6WvO9H23EJ1RUxd_gzAiVnnnWEo",
 
         authDomain:
         "janken-game-69aa6.firebaseapp.com",
@@ -171,23 +250,19 @@
     };
 
 
-    // 啟動 Firebase
     const app = initializeApp(firebaseConfig);
 
-    // 啟動 Firestore
     const db = getFirestore(app);
 
 
-    // ==========================================
-    // 玩家資料
-    // ==========================================
-
     let currentUser = null;
+    let currentRoom = null;
+    let unsubscribeRoom = null;
 
 
-    // ==========================================
-    // 初始化 LINE LIFF
-    // ==========================================
+    // ============================
+    // LINE 初始化
+    // ============================
 
     async function initializeLiff() {
 
@@ -197,159 +272,504 @@
                 liffId: "2011114180-glOZVk21"
             });
 
-            console.log("LIFF 初始化成功");
-
             if (!liff.isLoggedIn()) {
 
                 liff.login();
-
                 return;
+
             }
 
-
-            // 取得 LINE 玩家資料
-            const profile = await liff.getProfile();
-
-            currentUser = profile;
-
+            currentUser = await liff.getProfile();
 
             document.getElementById("userInfo").innerText =
-                "👋 " + profile.displayName + "，歡迎來玩！";
-
-
-            document.getElementById("status").innerText =
-                "LINE 與 Firebase 已連線";
-
-
-            // LINE 登入完成才開放出拳
-            document.querySelectorAll(".choice").forEach(button => {
-                button.disabled = false;
-            });
-
+                "👋 " + currentUser.displayName;
 
         } catch (error) {
-
-            console.error(error);
 
             document.getElementById("userInfo").innerText =
                 "❌ LINE 連線失敗";
 
-            document.getElementById("status").innerText =
-                error.message;
+            console.error(error);
 
         }
 
     }
 
 
-    // ==========================================
-    // 出拳
-    // ==========================================
+    // ============================
+    // 產生房號
+    // ============================
 
-    window.choose = async function(choice) {
+    function generateRoomCode() {
+
+        return Math.floor(
+            1000 + Math.random() * 9000
+        ).toString();
+
+    }
+
+
+    // ============================
+    // 建立房間
+    // ============================
+
+    window.createRoom = async function() {
 
         if (!currentUser) {
-
-            alert("LINE 玩家資料尚未載入");
-
+            alert("LINE 尚未連線完成");
             return;
         }
 
+        let roomCode = generateRoomCode();
 
-        let choiceText = "";
-        let emoji = "";
+        let roomRef = doc(db, "rooms", roomCode);
 
-
-        if (choice === "rock") {
-
-            choiceText = "石頭";
-            emoji = "✊";
-
-        }
+        let roomSnap = await getDoc(roomRef);
 
 
-        if (choice === "scissors") {
+        while (roomSnap.exists()) {
 
-            choiceText = "剪刀";
-            emoji = "✌️";
+            roomCode = generateRoomCode();
+
+            roomRef = doc(db, "rooms", roomCode);
+
+            roomSnap = await getDoc(roomRef);
 
         }
 
 
-        if (choice === "paper") {
+        await setDoc(roomRef, {
 
-            choiceText = "布";
-            emoji = "🖐️";
+            createdAt: serverTimestamp(),
 
-        }
+            hostId: currentUser.userId,
 
+            status: "waiting",
 
-        document.getElementById("result").innerText =
-            "你出了 " + emoji + " " + choiceText;
+            players: {
 
-
-        document.getElementById("status").innerText =
-            "正在送出你的出拳...";
-
-
-        try {
-
-            // ==================================
-            // 寫入 Firestore
-            // ==================================
-
-            const docRef = await addDoc(
-
-                collection(db, "moves"),
-
-                {
-
-                    userId:
-                        currentUser.userId,
+                [currentUser.userId]: {
 
                     displayName:
                         currentUser.displayName,
 
-                    choice:
-                        choice,
+                    choice: null,
 
-                    choiceText:
-                        choiceText,
-
-                    createdAt:
-                        serverTimestamp()
+                    ready: false
 
                 }
 
-            );
+            }
+
+        });
 
 
-            console.log(
-                "Firestore document ID:",
-                docRef.id
-            );
-
-
-            document.getElementById("status").innerText =
-                "✅ 出拳成功！資料已送出";
-
-
-        } catch (error) {
-
-            console.error(error);
-
-
-            document.getElementById("status").innerText =
-                "❌ 出拳資料寫入失敗：" + error.message;
-
-        }
+        enterRoom(roomCode);
 
     };
 
 
-    // ==========================================
-    // 啟動
-    // ==========================================
+    // ============================
+    // 加入房間
+    // ============================
+
+    window.joinRoom = async function() {
+
+        if (!currentUser) {
+            alert("LINE 尚未連線完成");
+            return;
+        }
+
+        const roomCode =
+            document.getElementById("roomInput")
+            .value.trim();
+
+
+        if (roomCode.length !== 4) {
+
+            alert("請輸入 4 位房號");
+            return;
+
+        }
+
+
+        const roomRef =
+            doc(db, "rooms", roomCode);
+
+
+        const roomSnap =
+            await getDoc(roomRef);
+
+
+        if (!roomSnap.exists()) {
+
+            alert("找不到這個房間");
+            return;
+
+        }
+
+
+        const data =
+            roomSnap.data();
+
+
+        const players =
+            data.players || {};
+
+
+        players[currentUser.userId] = {
+
+            displayName:
+                currentUser.displayName,
+
+            choice:
+                players[currentUser.userId]?.choice || null,
+
+            ready:
+                players[currentUser.userId]?.ready || false
+
+        };
+
+
+        await updateDoc(roomRef, {
+            players: players
+        });
+
+
+        enterRoom(roomCode);
+
+    };
+
+
+    // ============================
+    // 進入房間
+    // ============================
+
+    function enterRoom(roomCode) {
+
+        currentRoom = roomCode;
+
+        document.getElementById("lobbyArea").style.display =
+            "none";
+
+        document.getElementById("roomArea").style.display =
+            "block";
+
+        document.getElementById("gameArea").style.display =
+            "block";
+
+        document.getElementById("roomCodeDisplay").innerText =
+            roomCode;
+
+
+        listenRoom(roomCode);
+
+    }
+
+
+    // ============================
+    // 即時監聽房間
+    // ============================
+
+    function listenRoom(roomCode) {
+
+        if (unsubscribeRoom) {
+            unsubscribeRoom();
+        }
+
+
+        const roomRef =
+            doc(db, "rooms", roomCode);
+
+
+        unsubscribeRoom =
+        onSnapshot(roomRef, (snapshot) => {
+
+            if (!snapshot.exists()) {
+                return;
+            }
+
+
+            const data =
+                snapshot.data();
+
+
+            const players =
+                data.players || {};
+
+
+            renderPlayers(players);
+
+            checkResult(players);
+
+        });
+
+    }
+
+
+    // ============================
+    // 顯示玩家
+    // ============================
+
+    function renderPlayers(players) {
+
+        const list =
+            document.getElementById("playerList");
+
+        list.innerHTML = "";
+
+
+        Object.values(players).forEach(player => {
+
+            const row =
+                document.createElement("div");
+
+            row.className =
+                "player-row";
+
+
+            row.innerText =
+                player.displayName +
+                "　" +
+                (
+                    player.ready
+                    ? "✅ 已出拳"
+                    : "⏳ 尚未出拳"
+                );
+
+
+            list.appendChild(row);
+
+        });
+
+    }
+
+
+    // ============================
+    // 出拳
+    // ============================
+
+    window.choose = async function(choice) {
+
+        if (!currentRoom || !currentUser) {
+            return;
+        }
+
+
+        const roomRef =
+            doc(db, "rooms", currentRoom);
+
+
+        const roomSnap =
+            await getDoc(roomRef);
+
+
+        if (!roomSnap.exists()) {
+            return;
+        }
+
+
+        const data =
+            roomSnap.data();
+
+
+        const players =
+            data.players || {};
+
+
+        players[currentUser.userId] = {
+
+            displayName:
+                currentUser.displayName,
+
+            choice:
+                choice,
+
+            ready:
+                true
+
+        };
+
+
+        await updateDoc(roomRef, {
+            players: players
+        });
+
+
+        document.getElementById("status").innerText =
+            "✅ 你已經出拳，等待其他玩家";
+
+
+        document
+        .querySelectorAll(".choice")
+        .forEach(button => {
+
+            button.disabled = true;
+
+        });
+
+    };
+
+
+    // ============================
+    // 判斷結果
+    // ============================
+
+    function checkResult(players) {
+
+        const playerArray =
+            Object.values(players);
+
+
+        if (playerArray.length < 2) {
+
+            document.getElementById("status").innerText =
+                "等待其他玩家加入...";
+
+            return;
+
+        }
+
+
+        const allReady =
+            playerArray.every(
+                player => player.ready
+            );
+
+
+        if (!allReady) {
+
+            document.getElementById("status").innerText =
+                "等待所有玩家出拳...";
+
+            return;
+
+        }
+
+
+        showResult(playerArray);
+
+    }
+
+
+    // ============================
+    // 公布結果
+    // ============================
+
+    function showResult(players) {
+
+        const resultBox =
+            document.getElementById("result");
+
+
+        const emoji = {
+
+            rock: "✊ 石頭",
+
+            scissors: "✌️ 剪刀",
+
+            paper: "🖐️ 布"
+
+        };
+
+
+        let html =
+            "<h3>🎊 全員完成</h3>";
+
+
+        players.forEach(player => {
+
+            html +=
+                player.displayName +
+                "： " +
+                emoji[player.choice] +
+                "<br>";
+
+        });
+
+
+        const choices =
+            [...new Set(
+                players.map(
+                    player => player.choice
+                )
+            )];
+
+
+        if (
+            choices.length === 1 ||
+            choices.length === 3
+        ) {
+
+            html +=
+                "<br><strong>🤝 平手！</strong>";
+
+        } else {
+
+
+            let winningChoice = "";
+
+
+            if (
+                choices.includes("rock") &&
+                choices.includes("scissors")
+            ) {
+
+                winningChoice = "rock";
+
+            }
+
+
+            if (
+                choices.includes("scissors") &&
+                choices.includes("paper")
+            ) {
+
+                winningChoice = "scissors";
+
+            }
+
+
+            if (
+                choices.includes("paper") &&
+                choices.includes("rock")
+            ) {
+
+                winningChoice = "paper";
+
+            }
+
+
+            const winners =
+                players
+                .filter(
+                    player =>
+                    player.choice ===
+                    winningChoice
+                )
+                .map(
+                    player =>
+                    player.displayName
+                );
+
+
+            html +=
+                "<br><strong>🏆 勝利：" +
+                winners.join("、") +
+                "</strong>";
+
+        }
+
+
+        resultBox.innerHTML =
+            html;
+
+
+        document.getElementById("status").innerText =
+            "本局已完成";
+
+    }
+
 
     initializeLiff();
 

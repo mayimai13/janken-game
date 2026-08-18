@@ -8,6 +8,7 @@ import {
   renderGroupControl, startGroup, endGroup, finishGroupStage
 } from "./groups.js";
 import { buildFinishedUpdate, renderWinner } from "./winner.js";
+import { makeHistoryRecord, appendHistory, renderHistory } from "./history.js";
 import { initChat } from "./chat.js";
 
 const { playerId, nickname, roomCode } = getGameSession();
@@ -83,6 +84,7 @@ subscribeRoom(roomRef, snapshot => {
     onEndGroup: group => window.endGroup(group)
   });
   renderWinner(roomData, players);
+  renderHistory(roomData);
 });
 
 async function safely(fn) {
@@ -273,6 +275,7 @@ async function endRound() {
     if (!data.tournamentMode) throw new Error("尚未設定淘汰規則");
 
     const ps = { ...(data.players || {}) };
+    const before = JSON.parse(JSON.stringify(ps));
     const activeEntries = Object.entries(ps).filter(([, p]) => p.status === "active");
     const ready = activeEntries.filter(([, p]) => p.ready);
 
@@ -285,7 +288,7 @@ async function endRound() {
       }
     });
 
-    // 第一輪先保留出拳結果，讓房主決定是否依拳種分組
+    // 第一輪先只記錄出拳結果，之後由房主決定分組或直接判定
     if ((data.round || 1) === 1 && !data.firstRoundDecision) {
       ready.forEach(([id, p]) => {
         if (ps[id].status === "active") {
@@ -293,24 +296,47 @@ async function endRound() {
         }
       });
 
+      const historyRecord = makeHistoryRecord({
+        round: data.round || 1,
+        mode: null,
+        playersBefore: before,
+        playersAfter: ps,
+        title: "第 1 輪・分組依據",
+        note: "已公布第一輪出拳，等待房主決定「依拳種分組」或「不分組直接判定」。"
+      });
+
       transaction.update(roomRef, {
         players: ps,
-        roundStatus: "firstDecision"
+        roundStatus: "firstDecision",
+        roundHistory: appendHistory(data, historyRecord)
       });
       return;
     }
 
-    applyElimination(ps, data.tournamentMode);
+    const elimination = applyElimination(ps, data.tournamentMode);
+
+    const historyRecord = makeHistoryRecord({
+      round: data.round || 1,
+      mode: data.tournamentMode,
+      playersBefore: before,
+      playersAfter: ps,
+      tie: elimination.tie,
+      note: elimination.tie ? "本輪沒有淘汰，所有仍在場玩家進入重賽。" : null
+    });
 
     const active = activePlayers(ps);
     if (active.length === 1) {
-      transaction.update(roomRef, buildFinishedUpdate(ps));
+      transaction.update(roomRef, {
+        ...buildFinishedUpdate(ps),
+        roundHistory: appendHistory(data, historyRecord)
+      });
       return;
     }
 
     transaction.update(roomRef, {
       players: ps,
-      roundStatus: "ended"
+      roundStatus: "ended",
+      roundHistory: appendHistory(data, historyRecord)
     });
   });
 }

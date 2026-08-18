@@ -31,6 +31,15 @@
     .mode-label{margin-top:10px;padding:10px;background:#fff8e1;border-radius:10px;font-weight:bold}
     .group-box{padding:14px;margin:10px 0;background:#fafafa;border-radius:12px;text-align:left}
     .group-title{font-size:18px;font-weight:bold}.group-status{color:#777;font-size:14px;margin-top:4px}
+    .history-card{text-align:left}
+    .history-card h2{text-align:center}
+    .history-item{padding:14px;margin:12px 0;background:#fafafa;border-radius:12px;border:1px solid #eee}
+    .history-title{font-weight:bold;font-size:18px}
+    .history-meta{margin-top:6px;color:#666;font-size:14px}
+    .history-results{margin-top:10px;line-height:1.8}
+    .history-advanced{margin-top:10px;font-weight:bold}
+    .history-eliminated{margin-top:6px;color:#888}
+    .history-tie{margin-top:10px;font-weight:bold}
     .chat-card{text-align:left}.chat-title{text-align:center}
     #chatMessages{height:300px;overflow-y:auto;background:#fafafa;border-radius:12px;border:1px solid #eee;padding:10px}
     .chat-message{padding:9px 11px;background:#fff;border-radius:10px;margin-bottom:10px}
@@ -112,6 +121,14 @@
   <div id="winnerArea" class="card">
     <h2>🎉 比賽結束</h2>
     <div id="finalWinner" class="winner"></div>
+  </div>
+
+
+  <div class="card history-card">
+    <h2>📜 每輪結果</h2>
+    <div id="roundHistory">
+      <div class="hint" style="text-align:center">尚無比賽結果</div>
+    </div>
   </div>
 
   <div class="card chat-card">

@@ -72,6 +72,7 @@ window.createRoom = async function () {
       groupStatuses: {},
       tournamentMode: null,
       tournamentModeLocked: false,
+      roundHistory: [],
       createdAt: serverTimestamp(),
       players: {}
     });

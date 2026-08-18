@@ -1,6 +1,7 @@
 import { transactRoom, activePlayers } from "./room.js";
 import { applyElimination, GROUP_NAMES } from "./rules.js";
 import { buildFinishedUpdate } from "./winner.js";
+import { makeHistoryRecord, appendHistory } from "./history.js";
 
 const GROUPS = ["rock", "scissors", "paper"];
 
@@ -29,7 +30,18 @@ export async function continueWithoutGroups({ roomRef, playerId }) {
     if (!data.tournamentMode) throw new Error("尚未設定淘汰規則");
 
     const players = { ...(data.players || {}) };
-    applyElimination(players, data.tournamentMode);
+    const before = JSON.parse(JSON.stringify(players));
+    const elimination = applyElimination(players, data.tournamentMode);
+
+    const historyRecord = makeHistoryRecord({
+      round: data.round || 1,
+      mode: data.tournamentMode,
+      playersBefore: before,
+      playersAfter: players,
+      title: `第 ${data.round || 1} 輪・直接判定`,
+      tie: elimination.tie,
+      note: elimination.tie ? "本輪沒有淘汰，需進入下一輪重新比賽。" : null
+    });
 
     const active = activePlayers(players);
     if (active.length === 1) {
@@ -37,7 +49,8 @@ export async function continueWithoutGroups({ roomRef, playerId }) {
         ...buildFinishedUpdate(players),
         firstRoundDecision: true,
         groupMode: false,
-        stage: "normal"
+        stage: "normal",
+        roundHistory: appendHistory(data, historyRecord)
       });
       return;
     }
@@ -47,7 +60,8 @@ export async function continueWithoutGroups({ roomRef, playerId }) {
       firstRoundDecision: true,
       groupMode: false,
       stage: "normal",
-      roundStatus: "ended"
+      roundStatus: "ended",
+      roundHistory: appendHistory(data, historyRecord)
     });
   });
 }
@@ -186,6 +200,7 @@ export async function endGroup({ roomRef, playerId, group }) {
     if (!data.tournamentMode) throw new Error("尚未設定淘汰規則");
 
     const players = { ...(data.players || {}) };
+    const before = JSON.parse(JSON.stringify(players));
     const statuses = { ...(data.groupStatuses || {}) };
 
     const members = Object.entries(players).filter(
@@ -204,6 +219,17 @@ export async function endGroup({ roomRef, playerId, group }) {
     const choices = [...new Set(ready.map(([, p]) => p.choice))];
 
     if (choices.length === 1 || choices.length === 3) {
+      const historyRecord = makeHistoryRecord({
+        round: data.round || 1,
+        mode: data.tournamentMode,
+        playersBefore: before,
+        playersAfter: players,
+        title: `第 ${data.round || 1} 輪・${GROUP_NAMES[group]}`,
+        group,
+        tie: true,
+        note: "本組平手，需要重賽。"
+      });
+
       ready.forEach(([id]) => {
         players[id] = { ...players[id], choice: null, ready: false };
       });
@@ -213,19 +239,31 @@ export async function endGroup({ roomRef, playerId, group }) {
         players,
         activeGroup: null,
         groupStatuses: statuses,
-        roundStatus: "groupWaiting"
+        roundStatus: "groupWaiting",
+        roundHistory: appendHistory(data, historyRecord)
       });
       return;
     }
 
     applyElimination(players, data.tournamentMode, p => p.group === group);
+
+    const historyRecord = makeHistoryRecord({
+      round: data.round || 1,
+      mode: data.tournamentMode,
+      playersBefore: before,
+      playersAfter: players,
+      title: `第 ${data.round || 1} 輪・${GROUP_NAMES[group]}`,
+      group
+    });
+
     statuses[group] = "completed";
 
     transaction.update(roomRef, {
       players,
       activeGroup: null,
       groupStatuses: statuses,
-      roundStatus: "groupWaiting"
+      roundStatus: "groupWaiting",
+      roundHistory: appendHistory(data, historyRecord)
     });
   });
 }

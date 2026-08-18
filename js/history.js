@@ -6,6 +6,14 @@ const CHOICE_LABEL = {
   paper: "🖐️ 布"
 };
 
+/**
+ * 建立一筆「本輪歷史紀錄」
+ *
+ * 核心原則：
+ * 1. 只記錄「本輪開始時仍是 active」的玩家
+ * 2. 只記錄「本輪真的有出拳」或「本輪因未出拳而被淘汰」的人
+ * 3. 前一輪已淘汰的 spectator，就算 Firebase 裡還殘留舊 choice，也完全不列入
+ */
 export function makeHistoryRecord({
   round,
   mode,
@@ -18,30 +26,40 @@ export function makeHistoryRecord({
 }) {
   const results = [];
 
-  const ids = new Set([
-    ...Object.keys(playersBefore || {}),
-    ...Object.keys(playersAfter || {})
-  ]);
+  const beforeMap = playersBefore || {};
+  const afterMap = playersAfter || {};
 
-  ids.forEach(id => {
-    const before = playersBefore?.[id];
-    const after = playersAfter?.[id];
-    if (!before && !after) return;
+  Object.entries(beforeMap).forEach(([id, before]) => {
+    const after = afterMap[id] || before;
 
-    // 只記錄這次有出拳/被截止淘汰的人
-    const choice = before?.choice ?? after?.choice ?? null;
-    const becameEliminated =
-      before?.status === "active" && after?.status === "spectator";
-    const wasActive = before?.status === "active";
+    // ★ 最重要：前一輪已淘汰者，不屬於本輪參賽者
+    if (before.status !== "active") return;
 
-    if (!choice && !becameEliminated) return;
+    const didPlayThisRound = before.ready === true && !!before.choice;
+
+    const eliminatedThisRound =
+      before.status === "active" &&
+      after.status === "spectator";
+
+    // 沒出拳、也沒有在本輪被淘汰，就不屬於本輪結果
+    if (!didPlayThisRound && !eliminatedThisRound) return;
+
+    let outcome = "other";
+
+    if (tie && didPlayThisRound) {
+      outcome = "tie";
+    } else if (eliminatedThisRound) {
+      outcome = "eliminated";
+    } else if (after.status === "active") {
+      outcome = "advanced";
+    }
 
     results.push({
       id,
-      nickname: after?.nickname || before?.nickname || "匿名玩家",
-      choice,
-      outcome: becameEliminated ? "eliminated" : (wasActive ? "advanced" : "other"),
-      reason: after?.eliminatedReason || null
+      nickname: after.nickname || before.nickname || "匿名玩家",
+      choice: didPlayThisRound ? before.choice : null,
+      outcome,
+      reason: after.eliminatedReason || null
     });
   });
 
@@ -52,7 +70,9 @@ export function makeHistoryRecord({
     group: group || null,
     title:
       title ||
-      (group ? `第 ${round || 1} 輪・${GROUP_NAMES[group]}` : `第 ${round || 1} 輪`),
+      (group
+        ? `第 ${round || 1} 輪・${GROUP_NAMES[group]}`
+        : `第 ${round || 1} 輪`),
     mode: mode || null,
     tie: !!tie,
     note: note || null,
@@ -71,7 +91,8 @@ export function renderHistory(roomData) {
   const history = [...(roomData.roundHistory || [])].reverse();
 
   if (!history.length) {
-    box.innerHTML = '<div class="hint" style="text-align:center">尚無比賽結果</div>';
+    box.innerHTML =
+      '<div class="hint" style="text-align:center">尚無比賽結果</div>';
     return;
   }
 
@@ -96,22 +117,33 @@ export function renderHistory(roomData) {
 
     const advanced = [];
     const eliminated = [];
+    const tied = [];
 
     (item.results || []).forEach(r => {
       const line = document.createElement("div");
-      const choiceText = r.choice ? (CHOICE_LABEL[r.choice] || r.choice) : "未出拳";
-      const outcomeText =
-        item.tie ? "🤝 平手" :
-        r.outcome === "eliminated" ? "❌ 淘汰" :
-        r.outcome === "advanced" ? "✅ 晉級" : "";
 
-      line.innerText = `${r.nickname}：${choiceText}${outcomeText ? "　" + outcomeText : ""}`;
-      results.appendChild(line);
+      const choiceText = r.choice
+        ? (CHOICE_LABEL[r.choice] || r.choice)
+        : "未出拳";
 
-      if (!item.tie) {
-        if (r.outcome === "advanced") advanced.push(r.nickname);
-        if (r.outcome === "eliminated") eliminated.push(r.nickname);
+      let outcomeText = "";
+
+      if (r.outcome === "tie") {
+        outcomeText = "🤝 平手";
+        tied.push(r.nickname);
+      } else if (r.outcome === "eliminated") {
+        outcomeText = "❌ 淘汰";
+        eliminated.push(r.nickname);
+      } else if (r.outcome === "advanced") {
+        outcomeText = "✅ 晉級";
+        advanced.push(r.nickname);
       }
+
+      line.innerText =
+        `${r.nickname}：${choiceText}` +
+        (outcomeText ? `　${outcomeText}` : "");
+
+      results.appendChild(line);
     });
 
     card.append(title, meta, results);
@@ -119,14 +151,16 @@ export function renderHistory(roomData) {
     if (item.tie) {
       const tie = document.createElement("div");
       tie.className = "history-tie";
-      tie.innerText = "🤝 本輪平手，需要重新比賽";
+      tie.innerText = tied.length
+        ? `🤝 本輪平手：${tied.join("、")}，需要重新比賽`
+        : "🤝 本輪平手，需要重新比賽";
       card.appendChild(tie);
     } else {
       const adv = document.createElement("div");
       adv.className = "history-advanced";
       adv.innerText = advanced.length
         ? `✅ 本輪晉級：${advanced.join("、")}`
-        : (item.note || "本輪尚未產生晉級者");
+        : "✅ 本輪沒有產生新的晉級名單";
       card.appendChild(adv);
 
       if (eliminated.length) {

@@ -354,10 +354,13 @@ async function prepareNextRound() {
     }
     if (active.length < 2) throw new Error("沒有足夠參賽者進入下一輪");
 
+    // 清掉所有人的上一輪出拳資料，避免舊 choice 殘留到下一輪
     Object.keys(ps).forEach(id => {
-      if (ps[id].status === "active") {
-        ps[id] = { ...ps[id], choice: null, ready: false };
-      }
+      ps[id] = {
+        ...ps[id],
+        choice: null,
+        ready: false
+      };
     });
 
     transaction.update(roomRef, {

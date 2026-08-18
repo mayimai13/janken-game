@@ -281,10 +281,15 @@ export async function finishGroupStage({ roomRef, playerId }) {
     const players = { ...(data.players || {}) };
     const active = activePlayers(players);
 
+    // 分組結束時清除所有人的舊出拳資料；
+    // active 玩家另外清掉 group，spectator 保留淘汰狀態但不保留舊拳
     Object.keys(players).forEach(id => {
-      if (players[id].status === "active") {
-        players[id] = { ...players[id], group: null, choice: null, ready: false };
-      }
+      players[id] = {
+        ...players[id],
+        group: players[id].status === "active" ? null : players[id].group ?? null,
+        choice: null,
+        ready: false
+      };
     });
 
     if (active.length === 1) {

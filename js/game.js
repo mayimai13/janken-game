@@ -25,6 +25,12 @@ let roomData = null;
 let isHost = false;
 let players = {};
 
+// 用來判斷「房主剛按下開始」的即時狀態轉換。
+// 第一次載入頁面只記錄，不跳 alert，避免重新整理時重複通知。
+let previousRoundStatus = null;
+let previousActiveGroup = null;
+let hasInitializedRealtimeState = false;
+
 document.getElementById("roomNumber").innerText = roomCode;
 
 const chat = initChat({
@@ -65,12 +71,15 @@ subscribeRoom(roomRef, snapshot => {
   players = roomData.players || {};
   isHost = roomData.hostId === playerId;
 
+  handleRealtimeStartNotice();
+
   document.getElementById("hostControls").style.display = isHost ? "block" : "none";
   document.getElementById("hostBox").innerText = `👑 房主：${roomData.hostNickname || "主持人"}`;
   document.getElementById("roundNumber").innerText = `第 ${roomData.round || 1} 輪`;
 
   renderMode(roomData);
   renderRoundState();
+  renderLiveStatus();
   renderJoinStatus();
   renderPlayers();
   renderMainUI();
@@ -266,6 +275,168 @@ function renderStatus() {
   const ready = active.filter(p => p.ready);
   document.getElementById("status").innerText =
     `目前 ${active.length} 位參賽者，${ready.length} 位已出拳`;
+}
+
+
+function getCurrentModeNoticeText() {
+  if (roomData.tournamentMode === "loser") return "😈 輸家獲勝";
+  if (roomData.tournamentMode === "winner") return "🏆 贏家獲勝";
+  return "尚未選擇";
+}
+
+function handleRealtimeStartNotice() {
+  const currentStatus = roomData.roundStatus ?? null;
+  const currentGroup = roomData.activeGroup ?? null;
+
+  // 首次載入或重新整理：只建立基準狀態，不跳通知。
+  if (!hasInitializedRealtimeState) {
+    previousRoundStatus = currentStatus;
+    previousActiveGroup = currentGroup;
+    hasInitializedRealtimeState = true;
+    return;
+  }
+
+  // 一般輪次：waiting -> playing
+  if (
+    previousRoundStatus === "waiting" &&
+    currentStatus === "playing"
+  ) {
+    const round = roomData.round || 1;
+
+    if (round === 1) {
+      alert(
+        "🔒 房間已鎖定\n\n" +
+        `🎯 本局淘汰賽為「${getCurrentModeNoticeText()}」\n\n` +
+        "🔥 即將開始猜拳大賽！"
+      );
+    } else {
+      alert(
+        `🔔 第 ${round} 輪開始！\n\n` +
+        `🎯 本局規則：${getCurrentModeNoticeText()}\n\n` +
+        "✊✌️🖐️ 請參賽玩家出拳！"
+      );
+    }
+  }
+
+  // 分組：groupWaiting -> groupPlaying
+  if (
+    previousRoundStatus !== "groupPlaying" &&
+    currentStatus === "groupPlaying" &&
+    currentGroup
+  ) {
+    alert(
+      `🔔 ${GROUP_NAMES[currentGroup]} 比賽開始！\n\n` +
+      `🎯 本局規則：${getCurrentModeNoticeText()}\n\n` +
+      `${GROUP_NAMES[currentGroup]} 玩家請出拳\n` +
+      "👀 其他玩家請觀賽"
+    );
+  }
+
+  previousRoundStatus = currentStatus;
+  previousActiveGroup = currentGroup;
+}
+
+function renderLiveStatus() {
+  const main = document.getElementById("liveStatusMain");
+  const details = document.getElementById("liveStatusDetails");
+  if (!main || !details) return;
+
+  const active = activePlayers(players);
+  const mode = getCurrentModeNoticeText();
+  let rows = [];
+
+  if (roomData.status === "finished") {
+    main.innerText = "🏆 比賽已結束";
+    rows = [
+      `🎯 淘汰規則：${mode}`,
+      `🏆 最後留下：${roomData.winner || "—"}`,
+      "💬 討論區仍可繼續使用"
+    ];
+  } else if (roomData.stage === "group") {
+    if (roomData.activeGroup) {
+      const current = active.filter(p => p.group === roomData.activeGroup);
+      const ready = current.filter(p => p.ready);
+
+      main.innerText = `⚔️ ${GROUP_NAMES[roomData.activeGroup]} 比賽中`;
+      rows = [
+        `🎯 淘汰規則：${mode}`,
+        `👥 本組參賽：${current.length} 人`,
+        `✅ 已出拳：${ready.length} / ${current.length}`,
+        "👀 其他組別目前觀賽中"
+      ];
+    } else {
+      main.innerText = "👥 分組淘汰進行中";
+      rows = [
+        `🎯 淘汰規則：${mode}`,
+        `👥 目前仍在場：${active.length} 人`,
+        "⏳ 等待房主選擇下一組比賽"
+      ];
+    }
+  } else if (roomData.joinOpen !== false) {
+    main.innerText = "🟢 等待參賽者加入";
+    rows = [
+      `👥 目前參賽：${active.length} 人`,
+      "🔓 房間目前開放加入",
+      "⏳ 等待房主結束加入"
+    ];
+  } else if (roomData.roundStatus === "waiting") {
+    const round = roomData.round || 1;
+    main.innerText = round === 1
+      ? "🔒 報名截止，等待開始淘汰賽"
+      : `⏳ 第 ${round} 輪準備中`;
+
+    rows = [
+      `🎯 淘汰規則：${mode}`,
+      `👥 本輪參賽：${active.length} 人`,
+      round === 1
+        ? "▶️ 等待房主按「開始淘汰賽」"
+        : `▶️ 等待房主開始第 ${round} 輪`
+    ];
+  } else if (roomData.roundStatus === "playing") {
+    const round = roomData.round || 1;
+    const ready = active.filter(p => p.ready);
+
+    main.innerText = `🔥 第 ${round} 輪進行中`;
+    rows = [
+      `🎯 淘汰規則：${mode}`,
+      `👥 本輪參賽：${active.length} 人`,
+      `✅ 已出拳：${ready.length} / ${active.length}`,
+      "✊✌️🖐️ 請尚未出拳的玩家完成出拳"
+    ];
+  } else if (roomData.roundStatus === "firstDecision") {
+    main.innerText = "📊 第一輪出拳完成";
+    rows = [
+      `🎯 淘汰規則：${mode}`,
+      `👥 目前仍在場：${active.length} 人`,
+      "⏳ 等待房主決定「依拳種分組」或「不分組直接判定」"
+    ];
+  } else if (roomData.roundStatus === "ended") {
+    const round = roomData.round || 1;
+    main.innerText = `✅ 第 ${round} 輪結束`;
+    rows = [
+      `🎯 淘汰規則：${mode}`,
+      `✅ 目前晉級／仍在場：${active.length} 人`,
+      `⏳ 等待房主準備第 ${round + 1} 輪`
+    ];
+  } else if (roomData.roundStatus === "groupWaiting") {
+    main.innerText = "👥 分組淘汰等待中";
+    rows = [
+      `🎯 淘汰規則：${mode}`,
+      `👥 目前仍在場：${active.length} 人`,
+      "⏳ 等待房主安排下一組"
+    ];
+  } else {
+    main.innerText = "📢 比賽狀態更新中";
+    rows = [`🎯 淘汰規則：${mode}`];
+  }
+
+  details.innerHTML = "";
+  rows.forEach(text => {
+    const row = document.createElement("div");
+    row.className = "live-status-row";
+    row.innerText = text;
+    details.appendChild(row);
+  });
 }
 
 async function endRound() {

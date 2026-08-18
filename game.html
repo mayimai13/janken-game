@@ -29,6 +29,11 @@
     .mode-option{background:#fff;color:#222;border:2px solid #ddd;min-width:160px}
     .mode-option.selected{border-color:#06c755;background:#effff4}
     .mode-label{margin-top:10px;padding:10px;background:#fff8e1;border-radius:10px;font-weight:bold}
+    .live-status-card{text-align:left;border:2px solid #e8e8e8}
+    .live-status-card h2{text-align:center;margin-top:0}
+    .live-status-main{font-size:20px;font-weight:bold;text-align:center;margin-bottom:12px}
+    .live-status-row{padding:7px 0;border-bottom:1px solid #eee;line-height:1.6}
+    .live-status-row:last-child{border-bottom:0}
     .group-box{padding:14px;margin:10px 0;background:#fafafa;border-radius:12px;text-align:left}
     .group-title{font-size:18px;font-weight:bold}.group-status{color:#777;font-size:14px;margin-top:4px}
     .history-card{text-align:left}
@@ -63,6 +68,12 @@
     <button class="help-btn" onclick="location.href='help.html'">❓ 使用說明</button>
     <div id="copyMessage"></div>
     <div id="joinStatus">🟢 開放加入</div>
+  </div>
+
+  <div class="card live-status-card">
+    <h2>📢 比賽現況</h2>
+    <div id="liveStatusMain" class="live-status-main">🟢 等待參賽者加入</div>
+    <div id="liveStatusDetails"></div>
   </div>
 
   <div class="card">

@@ -54,6 +54,14 @@ body {
     font-weight: bold;
 }
 
+.rule-box {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    background: #fff8e1;
+    font-weight: bold;
+}
+
 button {
     border: none;
     border-radius: 12px;
@@ -94,6 +102,10 @@ button:disabled {
 }
 
 .normal-btn {
+    background: #555;
+}
+
+.help-btn {
     background: #555;
 }
 
@@ -200,7 +212,10 @@ button:disabled {
     margin-top: 4px;
 }
 
-/* Chat */
+
+/* ===============================
+   討論區
+================================ */
 
 .chat-card {
     text-align: left;
@@ -278,7 +293,9 @@ button:disabled {
 </h1>
 
 
-<!-- 房間 -->
+<!-- ===============================
+     房間資訊
+================================ -->
 
 <div class="card">
 
@@ -306,6 +323,11 @@ button:disabled {
 </div>
 
 
+<div class="rule-box">
+🔄 本遊戲規則：輸的人留下，贏的人淘汰
+</div>
+
+
 <button
     class="share-btn"
     onclick="copyInviteLink()"
@@ -314,26 +336,27 @@ button:disabled {
 </button>
 
 
-<div id="copyMessage">
-</div>
-
-<div id="joinStatus">
-
 <button
+    class="help-btn"
     onclick="window.location.href='help.html'"
-    style="background:#555;"
 >
 ❓ 使用說明
 </button>
 
 
+<div id="copyMessage">
+</div>
+
+<div id="joinStatus">
 🟢 開放加入
 </div>
 
 </div>
 
 
-<!-- 玩家 -->
+<!-- ===============================
+     玩家
+================================ -->
 
 <div class="card">
 
@@ -360,7 +383,9 @@ button:disabled {
 </div>
 
 
-<!-- 遊戲 -->
+<!-- ===============================
+     遊戲
+================================ -->
 
 <div class="card">
 
@@ -403,6 +428,8 @@ button:disabled {
 <div id="result">
 </div>
 
+
+<!-- 房主控制 -->
 
 <div id="hostControls">
 
@@ -450,7 +477,9 @@ button:disabled {
 </div>
 
 
-<!-- 第一輪決策 -->
+<!-- ===============================
+     第一輪決策
+================================ -->
 
 <div
     id="groupDecisionArea"
@@ -487,7 +516,9 @@ button:disabled {
 </div>
 
 
-<!-- 分組控制 -->
+<!-- ===============================
+     分組控制
+================================ -->
 
 <div
     id="groupControlArea"
@@ -499,7 +530,11 @@ button:disabled {
 </h2>
 
 <p class="hint">
-房主可自行決定哪一組先進行
+房主可以自行決定哪一組先進行
+</p>
+
+<p class="hint">
+⚠️ 各組同樣採「輸的人留下」
 </p>
 
 
@@ -519,7 +554,9 @@ button:disabled {
 </div>
 
 
-<!-- 冠軍 -->
+<!-- ===============================
+     最後留下者
+================================ -->
 
 <div
     id="winnerArea"
@@ -539,7 +576,9 @@ button:disabled {
 </div>
 
 
-<!-- 聊天 -->
+<!-- ===============================
+     討論區
+================================ -->
 
 <div class="card chat-card">
 
@@ -603,6 +642,10 @@ import {
 from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 
+// ======================================
+// Firebase
+// ======================================
+
 const firebaseConfig = {
 
     apiKey:
@@ -640,6 +683,10 @@ const db =
         app
     );
 
+
+// ======================================
+// 玩家資料
+// ======================================
 
 const playerId =
     sessionStorage.getItem(
@@ -713,7 +760,7 @@ const groupNames = {
 
 
 // ======================================
-// 工具：取得 active 玩家
+// 取得 active 玩家
 // ======================================
 
 function getActivePlayers(
@@ -724,8 +771,8 @@ function getActivePlayers(
         players
     )
     .filter(
-        p =>
-            p.status ===
+        player =>
+            player.status ===
             "active"
     );
 
@@ -733,32 +780,7 @@ function getActivePlayers(
 
 
 // ======================================
-// 工具：是否產生總冠軍
-// 分組階段不能在組內直接判總冠軍
-// ======================================
-
-function shouldFinishTournament(
-    players,
-    stage
-) {
-
-    const active =
-        getActivePlayers(
-            players
-        );
-
-
-    return (
-        stage !== "group" &&
-        active.length === 1 &&
-        Object.keys(players).length > 1
-    );
-
-}
-
-
-// ======================================
-// 工具：交易內直接設定冠軍
+// 建立比賽完成資料
 // ======================================
 
 function buildFinishedUpdate(
@@ -781,6 +803,22 @@ function buildFinishedUpdate(
     }
 
 
+    const activeEntry =
+        Object.entries(
+            players
+        )
+        .find(
+            (
+                [
+                    id,
+                    player
+                ]
+            ) =>
+                player.status ===
+                "active"
+        );
+
+
     return {
 
         players:
@@ -796,20 +834,9 @@ function buildFinishedUpdate(
             active[0].nickname,
 
         winnerPlayerId:
-            Object.entries(
-                players
-            )
-            .find(
-                (
-                    [
-                        id,
-                        p
-                    ]
-                ) =>
-                    p.status ===
-                    "active"
-            )?.[0] ||
-            null
+            activeEntry
+            ? activeEntry[0]
+            : null
 
     };
 
@@ -892,31 +919,27 @@ onSnapshot(
             : "none";
 
 
+        updateRoundState();
+
         renderPlayers(
             players
         );
 
-
         updateJoinStatus();
-
 
         updateMainUI(
             players
         );
 
-
         updateHostControls();
-
 
         updateGroupDecision(
             players
         );
 
-
         updateGroupControl(
             players
         );
-
 
         checkWinner(
             players
@@ -925,6 +948,139 @@ onSnapshot(
     }
 
 );
+
+
+// ======================================
+// 上方狀態
+// ======================================
+
+function updateRoundState() {
+
+    const box =
+        document
+        .getElementById(
+            "roundState"
+        );
+
+
+    if (
+        roomData.status ===
+        "finished"
+    ) {
+
+        box.innerText =
+            "🏆 比賽已結束";
+
+        return;
+
+    }
+
+
+    if (
+        roomData.stage ===
+        "group"
+    ) {
+
+        if (
+            roomData.activeGroup
+        ) {
+
+            box.innerText =
+                "⚔️ " +
+                groupNames[
+                    roomData.activeGroup
+                ] +
+                " 比賽中";
+
+        }
+
+        else {
+
+            box.innerText =
+                "👥 分組淘汰進行中";
+
+        }
+
+
+        return;
+
+    }
+
+
+    if (
+        roomData.joinOpen !==
+        false
+    ) {
+
+        box.innerText =
+            "🟢 等待參賽者加入";
+
+        return;
+
+    }
+
+
+    if (
+        roomData.roundStatus ===
+        "waiting"
+    ) {
+
+        box.innerText =
+            (
+                roomData.round ||
+                1
+            ) ===
+            1
+            ? "🔒 報名截止，等待開始淘汰賽"
+            : "⏳ 等待開始本輪";
+
+        return;
+
+    }
+
+
+    if (
+        roomData.roundStatus ===
+        "playing"
+    ) {
+
+        box.innerText =
+            "🔥 第 " +
+            (
+                roomData.round ||
+                1
+            ) +
+            " 輪進行中";
+
+        return;
+
+    }
+
+
+    if (
+        roomData.roundStatus ===
+        "firstDecision"
+    ) {
+
+        box.innerText =
+            "📊 等待房主決定是否分組";
+
+        return;
+
+    }
+
+
+    if (
+        roomData.roundStatus ===
+        "ended"
+    ) {
+
+        box.innerText =
+            "🏁 本輪已結束";
+
+    }
+
+}
 
 
 // ======================================
@@ -956,7 +1112,8 @@ function updateJoinStatus() {
         "joinStatus"
     )
     .innerText =
-        roomData.joinOpen !== false
+        roomData.joinOpen !==
+        false
         ? "🟢 開放加入"
         : "🔒 已停止加入";
 
@@ -970,21 +1127,21 @@ function updateJoinStatus() {
     }
 
 
-    const btn =
+    const button =
         document
         .getElementById(
             "closeJoinBtn"
         );
 
 
-    btn.disabled =
+    button.disabled =
         roomData.joinOpen ===
         false ||
         roomData.status ===
         "finished";
 
 
-    btn.innerText =
+    button.innerText =
         roomData.joinOpen ===
         false
         ? "🔒 已停止加入"
@@ -1043,8 +1200,7 @@ function renderPlayers(
 
 
             const row =
-                document
-                .createElement(
+                document.createElement(
                     "div"
                 );
 
@@ -1076,9 +1232,10 @@ function renderPlayers(
             ) {
 
                 text +=
-                    "　🏆 冠軍";
+                    "　🏆 最後留下";
 
             }
+
 
             else if (
                 player.status ===
@@ -1095,8 +1252,8 @@ function renderPlayers(
 
             }
 
+
             else if (
-                roomData.groupMode &&
                 roomData.stage ===
                 "group"
             ) {
@@ -1107,12 +1264,9 @@ function renderPlayers(
 
                     text +=
                         "　" +
-                        (
-                            groupNames[
-                                player.group
-                            ] ||
-                            ""
-                        );
+                        groupNames[
+                            player.group
+                        ];
 
                 }
 
@@ -1133,6 +1287,7 @@ function renderPlayers(
 
                 }
 
+
                 else if (
                     player.group ===
                     roomData.activeGroup
@@ -1145,7 +1300,16 @@ function renderPlayers(
 
                 }
 
+
+                else {
+
+                    text +=
+                        "　⏳ 等待組別";
+
+                }
+
             }
+
 
             else {
 
@@ -1212,7 +1376,7 @@ function updateMainUI(
         ];
 
 
-    // 比賽結束
+    // 已完成
     if (
         roomData.status ===
         "finished"
@@ -1230,20 +1394,32 @@ function updateMainUI(
             "block";
 
 
-        document
-        .getElementById(
-            "gameTitle"
-        )
-        .innerText =
-            isHost
-            ? "🏆 比賽已結束"
-            : (
-                me &&
-                me.status ===
-                "active"
-                ? "🏆 你是冠軍！"
-                : "👀 比賽已結束"
-              );
+        if (
+            !isHost &&
+            me &&
+            me.status ===
+            "active"
+        ) {
+
+            document
+            .getElementById(
+                "gameTitle"
+            )
+            .innerText =
+                "🏆 你是最後留下的人！";
+
+        }
+
+        else {
+
+            document
+            .getElementById(
+                "gameTitle"
+            )
+            .innerText =
+                "🏆 比賽已結束";
+
+        }
 
 
         document
@@ -1252,14 +1428,14 @@ function updateMainUI(
         )
         .innerText =
             roomData.winner
-            ? "🏆 冠軍：" +
+            ? "🏆 最後留下：" +
               roomData.winner
             : "🏆 比賽已結束";
 
 
         buttons.forEach(
-            btn =>
-                btn.disabled =
+            button =>
+                button.disabled =
                     true
         );
 
@@ -1274,6 +1450,7 @@ function updateMainUI(
     }
 
 
+    // 房主
     if (
         isHost
     ) {
@@ -1299,6 +1476,8 @@ function updateMainUI(
 
     }
 
+
+    // 玩家不存在
     else if (
         !me
     ) {
@@ -1308,6 +1487,8 @@ function updateMainUI(
 
     }
 
+
+    // 已淘汰
     else if (
         me.status ===
         "spectator"
@@ -1342,11 +1523,14 @@ function updateMainUI(
 
     }
 
+
+    // 分組階段
     else if (
         roomData.stage ===
         "group"
     ) {
 
+        // 不是現在比賽的組
         if (
             roomData.activeGroup !==
             me.group
@@ -1380,13 +1564,15 @@ function updateMainUI(
                 roomData.activeGroup
                 ? "目前由 " +
                   groupNames[
-                    roomData.activeGroup
+                      roomData.activeGroup
                   ] +
                   " 進行比賽"
                 : "等待房主選擇下一組比賽";
 
         }
 
+
+        // 是現在的組
         else {
 
             choiceArea.style.display =
@@ -1406,13 +1592,15 @@ function updateMainUI(
                 "gameTitle"
             )
             .innerText =
-                "⚔️ 輪到你的組別";
+                me.ready
+                ? "✅ 你已出拳"
+                : "⚔️ 輪到你的組別";
 
 
             buttons.forEach(
-                btn => {
+                button => {
 
-                    btn.disabled =
+                    button.disabled =
                         roomData.roundStatus !==
                         "groupPlaying" ||
                         me.ready;
@@ -1424,6 +1612,8 @@ function updateMainUI(
 
     }
 
+
+    // 一般階段
     else {
 
         choiceArea.style.display =
@@ -1452,6 +1642,7 @@ function updateMainUI(
 
         }
 
+
         else if (
             roomData.roundStatus ===
             "waiting"
@@ -1472,6 +1663,7 @@ function updateMainUI(
 
         }
 
+
         else if (
             roomData.roundStatus ===
             "playing"
@@ -1488,6 +1680,7 @@ function updateMainUI(
 
         }
 
+
         else if (
             roomData.roundStatus ===
             "firstDecision"
@@ -1502,6 +1695,7 @@ function updateMainUI(
 
         }
 
+
         else {
 
             document
@@ -1515,9 +1709,9 @@ function updateMainUI(
 
 
         buttons.forEach(
-            btn => {
+            button => {
 
-                btn.disabled =
+                button.disabled =
                     roomData.roundStatus !==
                     "playing" ||
                     me.ready;
@@ -1536,7 +1730,7 @@ function updateMainUI(
 
 
 // ======================================
-// 人數狀態
+// 狀態人數
 // ======================================
 
 function updateStatus(
@@ -1560,7 +1754,7 @@ function updateStatus(
         )
         .innerText =
             roomData.winner
-            ? "🏆 冠軍：" +
+            ? "🏆 最後留下：" +
               roomData.winner
             : "比賽已結束";
 
@@ -1576,18 +1770,18 @@ function updateStatus(
         roomData.activeGroup
     ) {
 
-        const current =
+        const currentGroup =
             active.filter(
-                p =>
-                    p.group ===
+                player =>
+                    player.group ===
                     roomData.activeGroup
             );
 
 
         const ready =
-            current.filter(
-                p =>
-                    p.ready
+            currentGroup.filter(
+                player =>
+                    player.ready
             );
 
 
@@ -1602,7 +1796,7 @@ function updateStatus(
             "：" +
             ready.length +
             " / " +
-            current.length +
+            currentGroup.length +
             " 已出拳";
 
 
@@ -1613,8 +1807,8 @@ function updateStatus(
 
     const ready =
         active.filter(
-            p =>
-                p.ready
+            player =>
+                player.ready
         );
 
 
@@ -1633,7 +1827,7 @@ function updateStatus(
 
 
 // ======================================
-// 房主一般按鈕
+// 房主按鈕
 // ======================================
 
 function updateHostControls() {
@@ -1677,7 +1871,6 @@ function updateHostControls() {
         "none";
 
 
-    // 冠軍後全部鎖住
     if (
         roomData.status ===
         "finished"
@@ -1807,35 +2000,63 @@ async function() {
     }
 
 
-    await runTransaction(
+    try {
 
-        db,
+        await runTransaction(
 
-        async transaction => {
+            db,
 
-
-            const snap =
-                await transaction.get(
-                    roomRef
-                );
+            async transaction => {
 
 
-            transaction.update(
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
 
-                roomRef,
 
-                {
+                const data =
+                    snapshot.data();
 
-                    joinOpen:
-                        false
+
+                if (
+                    data.hostId !==
+                    playerId
+                ) {
+
+                    throw new Error(
+                        "只有房主可以停止加入"
+                    );
 
                 }
 
-            );
 
-        }
+                transaction.update(
 
-    );
+                    roomRef,
+
+                    {
+
+                        joinOpen:
+                            false
+
+                    }
+
+                );
+
+            }
+
+        );
+
+    }
+
+    catch(error) {
+
+        alert(
+            error.message
+        );
+
+    }
 
 };
 
@@ -1867,14 +2088,14 @@ async function() {
             async transaction => {
 
 
-                const snap =
+                const snapshot =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snap.data();
+                    snapshot.data();
 
 
                 const active =
@@ -1890,7 +2111,7 @@ async function() {
                 ) {
 
                     throw new Error(
-                        "目前只剩 1 位參賽者，不能再開始本輪"
+                        "只剩 1 位參賽者，不能再開始本輪"
                     );
 
                 }
@@ -1903,6 +2124,18 @@ async function() {
 
                     throw new Error(
                         "請先結束加入"
+                    );
+
+                }
+
+
+                if (
+                    data.roundStatus !==
+                    "waiting"
+                ) {
+
+                    throw new Error(
+                        "目前不能開始本輪"
                     );
 
                 }
@@ -1967,14 +2200,14 @@ async function(
             async transaction => {
 
 
-                const snap =
+                const snapshot =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snap.data();
+                    snapshot.data();
 
 
                 if (
@@ -2013,6 +2246,7 @@ async function(
                 }
 
 
+                // 分組
                 if (
                     data.stage ===
                     "group"
@@ -2033,6 +2267,8 @@ async function(
 
                 }
 
+
+                // 一般
                 else {
 
                     if (
@@ -2130,14 +2366,26 @@ async function() {
             async transaction => {
 
 
-                const snap =
+                const snapshot =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snap.data();
+                    snapshot.data();
+
+
+                if (
+                    data.roundStatus !==
+                    "playing"
+                ) {
+
+                    throw new Error(
+                        "本輪尚未開始"
+                    );
+
+                }
 
 
                 const players = {
@@ -2153,10 +2401,10 @@ async function() {
                         (
                             [
                                 id,
-                                p
+                                player
                             ]
                         ) =>
-                            p.status ===
+                            player.status ===
                             "active"
                     );
 
@@ -2167,10 +2415,10 @@ async function() {
                         (
                             [
                                 id,
-                                p
+                                player
                             ]
                         ) =>
-                            p.ready
+                            player.ready
                     );
 
 
@@ -2186,24 +2434,25 @@ async function() {
                 }
 
 
+                // 截止時沒出拳就淘汰
                 activeEntries.forEach(
 
                     (
                         [
                             id,
-                            p
+                            player
                         ]
                     ) => {
 
                         if (
-                            !p.ready
+                            !player.ready
                         ) {
 
                             players[
                                 id
                             ] = {
 
-                                ...p,
+                                ...player,
 
                                 status:
                                     "spectator",
@@ -2220,7 +2469,7 @@ async function() {
                 );
 
 
-                // 第一輪先讓房主選擇是否分組
+                // 第一輪先給房主決定分組
                 if (
                     (
                         data.round ||
@@ -2235,7 +2484,7 @@ async function() {
                         (
                             [
                                 id,
-                                p
+                                player
                             ]
                         ) => {
 
@@ -2243,10 +2492,12 @@ async function() {
                                 id
                             ] = {
 
-                                ...players[id],
+                                ...players[
+                                    id
+                                ],
 
                                 group:
-                                    p.choice
+                                    player.choice
 
                             };
 
@@ -2277,12 +2528,12 @@ async function() {
                 }
 
 
-                applyNormalElimination(
+                // 輸家留下
+                applyLoserStaysElimination(
                     players
                 );
 
 
-                // 一般模式淘汰後只剩一人，直接冠軍
                 const activeAfter =
                     getActivePlayers(
                         players
@@ -2294,15 +2545,14 @@ async function() {
                     1
                 ) {
 
-                    const finishUpdate =
+                    transaction.update(
+
+                        roomRef,
+
                         buildFinishedUpdate(
                             players
-                        );
+                        )
 
-
-                    transaction.update(
-                        roomRef,
-                        finishUpdate
                     );
 
 
@@ -2345,10 +2595,10 @@ async function() {
 
 
 // ======================================
-// 一般淘汰判定
+// ⭐ 輸家留下制判定
 // ======================================
 
-function applyNormalElimination(
+function applyLoserStaysElimination(
     players
 ) {
 
@@ -2360,12 +2610,12 @@ function applyNormalElimination(
             (
                 [
                     id,
-                    p
+                    player
                 ]
             ) =>
-                p.status ===
+                player.status ===
                 "active" &&
-                p.ready
+                player.ready
         );
 
 
@@ -2376,15 +2626,16 @@ function applyNormalElimination(
                     (
                         [
                             id,
-                            p
+                            player
                         ]
                     ) =>
-                        p.choice
+                        player.choice
                 )
             )
         ];
 
 
+    // 同拳或三種拳都有 → 平手，不淘汰
     if (
         choices.length !==
         2
@@ -2395,8 +2646,8 @@ function applyNormalElimination(
     }
 
 
-    const winner =
-        getWinningChoice(
+    const losingChoice =
+        getLosingChoice(
             choices
         );
 
@@ -2406,23 +2657,29 @@ function applyNormalElimination(
         (
             [
                 id,
-                p
+                player
             ]
         ) => {
 
+
+            // ★ 輸的人留下
+            // 其他（贏的人）淘汰
             if (
-                p.choice !==
-                winner
+                player.choice !==
+                losingChoice
             ) {
 
                 players[
                     id
                 ] = {
 
-                    ...p,
+                    ...player,
 
                     status:
-                        "spectator"
+                        "spectator",
+
+                    eliminatedReason:
+                        "猜拳獲勝"
 
                 };
 
@@ -2436,6 +2693,53 @@ function applyNormalElimination(
 
 
 // ======================================
+// 找出「輸的拳」
+// ======================================
+
+function getLosingChoice(
+    choices
+) {
+
+    // ✊ 石頭 vs ✌️ 剪刀
+    // 剪刀輸 → 剪刀留下
+    if (
+        choices.includes(
+            "rock"
+        ) &&
+        choices.includes(
+            "scissors"
+        )
+    ) {
+
+        return "scissors";
+
+    }
+
+
+    // ✌️ 剪刀 vs 🖐️ 布
+    // 布輸 → 布留下
+    if (
+        choices.includes(
+            "scissors"
+        ) &&
+        choices.includes(
+            "paper"
+        )
+    ) {
+
+        return "paper";
+
+    }
+
+
+    // 🖐️ 布 vs ✊ 石頭
+    // 石頭輸 → 石頭留下
+    return "rock";
+
+}
+
+
+// ======================================
 // 第一輪分組摘要
 // ======================================
 
@@ -2444,8 +2748,7 @@ function updateGroupDecision(
 ) {
 
     const area =
-        document
-        .getElementById(
+        document.getElementById(
             "groupDecisionArea"
         );
 
@@ -2489,19 +2792,19 @@ function updateGroupDecision(
         players
     )
     .filter(
-        p =>
-            p.status ===
+        player =>
+            player.status ===
             "active"
     )
     .forEach(
-        p => {
+        player => {
 
             if (
-                p.group
+                player.group
             ) {
 
                 counts[
-                    p.group
+                    player.group
                 ]++;
 
             }
@@ -2532,7 +2835,7 @@ function updateGroupDecision(
 
 
 // ======================================
-// 不分組
+// 第一輪：不分組
 // ======================================
 
 window.continueWithoutGroups =
@@ -2549,48 +2852,74 @@ async function() {
     }
 
 
-    await runTransaction(
+    try {
 
-        db,
+        await runTransaction(
 
-        async transaction => {
+            db,
 
-
-            const snap =
-                await transaction.get(
-                    roomRef
-                );
+            async transaction => {
 
 
-            const data =
-                snap.data();
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
 
 
-            const players = {
-                ...(data.players || {})
-            };
+                const data =
+                    snapshot.data();
 
 
-            applyNormalElimination(
-                players
-            );
+                const players = {
+                    ...(data.players || {})
+                };
 
 
-            const activeAfter =
-                getActivePlayers(
+                // ★ 輸家留下
+                applyLoserStaysElimination(
                     players
                 );
 
 
-            if (
-                activeAfter.length ===
-                1
-            ) {
-
-                const finishUpdate =
-                    buildFinishedUpdate(
+                const activeAfter =
+                    getActivePlayers(
                         players
                     );
+
+
+                if (
+                    activeAfter.length ===
+                    1
+                ) {
+
+                    transaction.update(
+
+                        roomRef,
+
+                        {
+
+                            ...buildFinishedUpdate(
+                                players
+                            ),
+
+                            firstRoundDecision:
+                                true,
+
+                            groupMode:
+                                false,
+
+                            stage:
+                                "normal"
+
+                        }
+
+                    );
+
+
+                    return;
+
+                }
 
 
                 transaction.update(
@@ -2599,7 +2928,8 @@ async function() {
 
                     {
 
-                        ...finishUpdate,
+                        players:
+                            players,
 
                         firstRoundDecision:
                             true,
@@ -2608,46 +2938,28 @@ async function() {
                             false,
 
                         stage:
-                            "normal"
+                            "normal",
+
+                        roundStatus:
+                            "ended"
 
                     }
 
                 );
 
-
-                return;
-
             }
 
+        );
 
-            transaction.update(
+    }
 
-                roomRef,
+    catch(error) {
 
-                {
+        alert(
+            error.message
+        );
 
-                    players:
-                        players,
-
-                    firstRoundDecision:
-                        true,
-
-                    groupMode:
-                        false,
-
-                    stage:
-                        "normal",
-
-                    roundStatus:
-                        "ended"
-
-                }
-
-            );
-
-        }
-
-    );
+    }
 
 };
 
@@ -2670,156 +2982,173 @@ async function() {
     }
 
 
-    await runTransaction(
+    try {
 
-        db,
+        await runTransaction(
 
-        async transaction => {
+            db,
+
+            async transaction => {
 
 
-            const snap =
-                await transaction.get(
-                    roomRef
+                const snapshot =
+                    await transaction.get(
+                        roomRef
+                    );
+
+
+                const data =
+                    snapshot.data();
+
+
+                const players = {
+                    ...(data.players || {})
+                };
+
+
+                const statuses =
+                    {};
+
+
+                [
+                    "rock",
+                    "scissors",
+                    "paper"
+                ]
+                .forEach(
+                    group => {
+
+
+                        const members =
+                            Object.values(
+                                players
+                            )
+                            .filter(
+                                player =>
+                                    player.status ===
+                                    "active" &&
+                                    player.group ===
+                                    group
+                            );
+
+
+                        if (
+                            members.length ===
+                            0
+                        ) {
+
+                            statuses[
+                                group
+                            ] =
+                                "empty";
+
+                        }
+
+
+                        else if (
+                            members.length ===
+                            1
+                        ) {
+
+                            statuses[
+                                group
+                            ] =
+                                "completed";
+
+                        }
+
+
+                        else {
+
+                            statuses[
+                                group
+                            ] =
+                                "waiting";
+
+                        }
+
+                    }
                 );
 
 
-            const data =
-                snap.data();
+                // 清除第一輪出拳
+                Object.keys(
+                    players
+                )
+                .forEach(
+                    id => {
+
+                        if (
+                            players[id].status ===
+                            "active"
+                        ) {
+
+                            players[
+                                id
+                            ] = {
+
+                                ...players[
+                                    id
+                                ],
+
+                                choice:
+                                    null,
+
+                                ready:
+                                    false
+
+                            };
+
+                        }
+
+                    }
+                );
 
 
-            const players = {
-                ...(data.players || {})
-            };
+                transaction.update(
 
+                    roomRef,
 
-            const statuses = {};
+                    {
 
+                        players:
+                            players,
 
-            [
-                "rock",
-                "scissors",
-                "paper"
-            ]
-            .forEach(
-                group => {
+                        firstRoundDecision:
+                            true,
 
+                        groupMode:
+                            true,
 
-                    const members =
-                        Object.values(
-                            players
-                        )
-                        .filter(
-                            p =>
-                                p.status ===
-                                "active" &&
-                                p.group ===
-                                group
-                        );
+                        stage:
+                            "group",
 
+                        activeGroup:
+                            null,
 
-                    if (
-                        members.length ===
-                        0
-                    ) {
+                        groupStatuses:
+                            statuses,
 
-                        statuses[
-                            group
-                        ] =
-                            "empty";
+                        roundStatus:
+                            "groupWaiting"
 
                     }
 
-                    else if (
-                        members.length ===
-                        1
-                    ) {
+                );
 
-                        // 組內一人只是自動晉級，不是總冠軍
-                        statuses[
-                            group
-                        ] =
-                            "completed";
+            }
 
-                    }
+        );
 
-                    else {
+    }
 
-                        statuses[
-                            group
-                        ] =
-                            "waiting";
+    catch(error) {
 
-                    }
+        alert(
+            error.message
+        );
 
-                }
-            );
-
-
-            Object.keys(
-                players
-            )
-            .forEach(
-                id => {
-
-                    if (
-                        players[id].status ===
-                        "active"
-                    ) {
-
-                        players[
-                            id
-                        ] = {
-
-                            ...players[id],
-
-                            choice:
-                                null,
-
-                            ready:
-                                false
-
-                        };
-
-                    }
-
-                }
-            );
-
-
-            transaction.update(
-
-                roomRef,
-
-                {
-
-                    players:
-                        players,
-
-                    firstRoundDecision:
-                        true,
-
-                    groupMode:
-                        true,
-
-                    stage:
-                        "group",
-
-                    activeGroup:
-                        null,
-
-                    groupStatuses:
-                        statuses,
-
-                    roundStatus:
-                        "groupWaiting"
-
-                }
-
-            );
-
-        }
-
-    );
+    }
 
 };
 
@@ -2833,8 +3162,7 @@ function updateGroupControl(
 ) {
 
     const area =
-        document
-        .getElementById(
+        document.getElementById(
             "groupControlArea"
         );
 
@@ -2871,8 +3199,7 @@ function updateGroupControl(
 
 
     const list =
-        document
-        .getElementById(
+        document.getElementById(
             "groupList"
         );
 
@@ -2900,17 +3227,16 @@ function updateGroupControl(
                     players
                 )
                 .filter(
-                    p =>
-                        p.status ===
+                    player =>
+                        player.status ===
                         "active" &&
-                        p.group ===
+                        player.group ===
                         group
                 );
 
 
             const box =
-                document
-                .createElement(
+                document.createElement(
                     "div"
                 );
 
@@ -2920,8 +3246,7 @@ function updateGroupControl(
 
 
             const title =
-                document
-                .createElement(
+                document.createElement(
                     "div"
                 );
 
@@ -2952,8 +3277,7 @@ function updateGroupControl(
 
 
             const text =
-                document
-                .createElement(
+                document.createElement(
                     "div"
                 );
 
@@ -2972,6 +3296,7 @@ function updateGroupControl(
 
             }
 
+
             else if (
                 status ===
                 "completed"
@@ -2980,10 +3305,11 @@ function updateGroupControl(
                 text.innerText =
                     members.length ===
                     1
-                    ? "✅ 1 人，自動晉級"
+                    ? "✅ 1 人，自動留下"
                     : "✅ 本組已完成";
 
             }
+
 
             else if (
                 status ===
@@ -2995,6 +3321,7 @@ function updateGroupControl(
 
             }
 
+
             else if (
                 status ===
                 "replay"
@@ -3004,6 +3331,7 @@ function updateGroupControl(
                     "🤝 本組平手，需要重賽";
 
             }
+
 
             else {
 
@@ -3029,8 +3357,7 @@ function updateGroupControl(
             ) {
 
                 const button =
-                    document
-                    .createElement(
+                    document.createElement(
                         "button"
                     );
 
@@ -3068,8 +3395,7 @@ function updateGroupControl(
             ) {
 
                 const button =
-                    document
-                    .createElement(
+                    document.createElement(
                         "button"
                     );
 
@@ -3172,14 +3498,14 @@ async function(
             async transaction => {
 
 
-                const snap =
+                const snapshot =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snap.data();
+                    snapshot.data();
 
 
                 if (
@@ -3203,10 +3529,10 @@ async function(
                         players
                     )
                     .filter(
-                        p =>
-                            p.status ===
+                        player =>
+                            player.status ===
                             "active" &&
-                            p.group ===
+                            player.group ===
                             group
                     );
 
@@ -3245,7 +3571,9 @@ async function(
                                 id
                             ] = {
 
-                                ...players[id],
+                                ...players[
+                                    id
+                                ],
 
                                 choice:
                                     null,
@@ -3335,14 +3663,14 @@ async function(
             async transaction => {
 
 
-                const snap =
+                const snapshot =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snap.data();
+                    snapshot.data();
 
 
                 const players = {
@@ -3363,12 +3691,12 @@ async function(
                         (
                             [
                                 id,
-                                p
+                                player
                             ]
                         ) =>
-                            p.status ===
+                            player.status ===
                             "active" &&
-                            p.group ===
+                            player.group ===
                             group
                     );
 
@@ -3378,10 +3706,10 @@ async function(
                         (
                             [
                                 id,
-                                p
+                                player
                             ]
                         ) =>
-                            p.ready
+                            player.ready
                     );
 
 
@@ -3397,24 +3725,25 @@ async function(
                 }
 
 
+                // 沒出拳者淘汰
                 members.forEach(
 
                     (
                         [
                             id,
-                            p
+                            player
                         ]
                     ) => {
 
                         if (
-                            !p.ready
+                            !player.ready
                         ) {
 
                             players[
                                 id
                             ] = {
 
-                                ...p,
+                                ...player,
 
                                 status:
                                     "spectator",
@@ -3438,16 +3767,16 @@ async function(
                                 (
                                     [
                                         id,
-                                        p
+                                        player
                                     ]
                                 ) =>
-                                    p.choice
+                                    player.choice
                             )
                         )
                     ];
 
 
-                // 同拳或三種都有 = 該組重賽
+                // 全同 or 三種都有 = 重賽
                 if (
                     choices.length ===
                     1 ||
@@ -3460,7 +3789,7 @@ async function(
                         (
                             [
                                 id,
-                                p
+                                player
                             ]
                         ) => {
 
@@ -3468,7 +3797,9 @@ async function(
                                 id
                             ] = {
 
-                                ...players[id],
+                                ...players[
+                                    id
+                                ],
 
                                 choice:
                                     null,
@@ -3517,34 +3848,39 @@ async function(
                 }
 
 
-                const winner =
-                    getWinningChoice(
+                // ⭐ 找輸的拳
+                const losingChoice =
+                    getLosingChoice(
                         choices
                     );
 
 
+                // ⭐ 贏的人淘汰，輸的人留下
                 ready.forEach(
 
                     (
                         [
                             id,
-                            p
+                            player
                         ]
                     ) => {
 
                         if (
-                            p.choice !==
-                            winner
+                            player.choice !==
+                            losingChoice
                         ) {
 
                             players[
                                 id
                             ] = {
 
-                                ...p,
+                                ...player,
 
                                 status:
-                                    "spectator"
+                                    "spectator",
+
+                                eliminatedReason:
+                                    "猜拳獲勝"
 
                             };
 
@@ -3555,7 +3891,6 @@ async function(
                 );
 
 
-                // 注意：組內剩一人只是該組晉級，不直接判總冠軍
                 statuses[
                     group
                 ] =
@@ -3628,14 +3963,14 @@ async function() {
             async transaction => {
 
 
-                const snap =
+                const snapshot =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snap.data();
+                    snapshot.data();
 
 
                 const statuses =
@@ -3651,9 +3986,13 @@ async function() {
                     ]
                     .every(
                         group =>
-                            statuses[group] ===
+                            statuses[
+                                group
+                            ] ===
                             "completed" ||
-                            statuses[group] ===
+                            statuses[
+                                group
+                            ] ===
                             "empty"
                     );
 
@@ -3680,7 +4019,7 @@ async function() {
                     );
 
 
-                // 所有分組完成後，如果全場只剩一人，這時才是總冠軍
+                // 全部分組後只剩一人
                 if (
                     active.length ===
                     1
@@ -3693,7 +4032,9 @@ async function() {
                         id => {
 
                             if (
-                                players[id].status ===
+                                players[
+                                    id
+                                ].status ===
                                 "active"
                             ) {
 
@@ -3701,7 +4042,9 @@ async function() {
                                     id
                                 ] = {
 
-                                    ...players[id],
+                                    ...players[
+                                        id
+                                    ],
 
                                     group:
                                         null,
@@ -3720,19 +4063,15 @@ async function() {
                     );
 
 
-                    const finishUpdate =
-                        buildFinishedUpdate(
-                            players
-                        );
-
-
                     transaction.update(
 
                         roomRef,
 
                         {
 
-                            ...finishUpdate,
+                            ...buildFinishedUpdate(
+                                players
+                            ),
 
                             groupMode:
                                 false,
@@ -3756,6 +4095,7 @@ async function() {
                 }
 
 
+                // 還有兩人以上 → 集合進下一輪
                 Object.keys(
                     players
                 )
@@ -3763,7 +4103,9 @@ async function() {
                     id => {
 
                         if (
-                            players[id].status ===
+                            players[
+                                id
+                            ].status ===
                             "active"
                         ) {
 
@@ -3771,7 +4113,9 @@ async function() {
                                 id
                             ] = {
 
-                                ...players[id],
+                                ...players[
+                                    id
+                                ],
 
                                 group:
                                     null,
@@ -3839,7 +4183,7 @@ async function() {
 
 
 // ======================================
-// 準備一般下一輪
+// 準備下一輪
 // ======================================
 
 window.prepareNextRound =
@@ -3865,14 +4209,14 @@ async function() {
             async transaction => {
 
 
-                const snap =
+                const snapshot =
                     await transaction.get(
                         roomRef
                     );
 
 
                 const data =
-                    snap.data();
+                    snapshot.data();
 
 
                 const players = {
@@ -3891,15 +4235,14 @@ async function() {
                     1
                 ) {
 
-                    const finishUpdate =
+                    transaction.update(
+
+                        roomRef,
+
                         buildFinishedUpdate(
                             players
-                        );
+                        )
 
-
-                    transaction.update(
-                        roomRef,
-                        finishUpdate
                     );
 
 
@@ -3927,7 +4270,9 @@ async function() {
                     id => {
 
                         if (
-                            players[id].status ===
+                            players[
+                                id
+                            ].status ===
                             "active"
                         ) {
 
@@ -3935,7 +4280,9 @@ async function() {
                                 id
                             ] = {
 
-                                ...players[id],
+                                ...players[
+                                    id
+                                ],
 
                                 choice:
                                     null,
@@ -3991,48 +4338,7 @@ async function() {
 
 
 // ======================================
-// 勝負拳
-// ======================================
-
-function getWinningChoice(
-    choices
-) {
-
-    if (
-        choices.includes(
-            "rock"
-        ) &&
-        choices.includes(
-            "scissors"
-        )
-    ) {
-
-        return "rock";
-
-    }
-
-
-    if (
-        choices.includes(
-            "scissors"
-        ) &&
-        choices.includes(
-            "paper"
-        )
-    ) {
-
-        return "scissors";
-
-    }
-
-
-    return "paper";
-
-}
-
-
-// ======================================
-// 冠軍顯示
+// 最後留下者
 // ======================================
 
 function checkWinner(
@@ -4045,7 +4351,7 @@ function checkWinner(
         );
 
 
-    const winnerArea =
+    const area =
         document
         .getElementById(
             "winnerArea"
@@ -4059,7 +4365,7 @@ function checkWinner(
         1
     ) {
 
-        winnerArea.style.display =
+        area.style.display =
             "block";
 
 
@@ -4073,7 +4379,7 @@ function checkWinner(
                 roomData.winner ||
                 active[0].nickname
             ) +
-            " 獲勝！";
+            " 最後留下！";
 
 
         return;
@@ -4081,7 +4387,7 @@ function checkWinner(
     }
 
 
-    winnerArea.style.display =
+    area.style.display =
         "none";
 
 }
@@ -4144,14 +4450,18 @@ const chatRef =
 
 const chatQuery =
     query(
+
         chatRef,
+
         orderBy(
             "createdAt",
             "desc"
         ),
+
         limit(
             50
         )
+
     );
 
 
@@ -4227,8 +4537,7 @@ function renderChat(
 
 
             const wrapper =
-                document
-                .createElement(
+                document.createElement(
                     "div"
                 );
 
@@ -4238,8 +4547,7 @@ function renderChat(
 
 
             const name =
-                document
-                .createElement(
+                document.createElement(
                     "div"
                 );
 
@@ -4263,8 +4571,7 @@ function renderChat(
 
 
             const text =
-                document
-                .createElement(
+                document.createElement(
                     "div"
                 );
 
@@ -4310,8 +4617,7 @@ window.sendMessage =
 async function() {
 
     const input =
-        document
-        .getElementById(
+        document.getElementById(
             "chatInput"
         );
 
@@ -4395,9 +4701,7 @@ async function() {
 };
 
 
-// ======================================
 // Enter 發送
-// ======================================
 
 document
 .getElementById(
@@ -4416,7 +4720,6 @@ document
 
             event.preventDefault();
 
-
             window.sendMessage();
 
         }
@@ -4426,15 +4729,12 @@ document
 );
 
 
-// ======================================
 // 字數
-// ======================================
 
 function updateChatCount() {
 
     const input =
-        document
-        .getElementById(
+        document.getElementById(
             "chatInput"
         );
 
